@@ -259,7 +259,8 @@ all_specialisations = {
         }
 
 class CharacterClass:
-    def __init__(self, specialisation, favoured_attributes, major_skills):
+    def __init__(self, name, specialisation, favoured_attributes, major_skills):
+        self.name = name
         if specialisation not in ['combat','magic','stealth']:
             print('uh oh')
         else:
@@ -274,6 +275,12 @@ class CharacterClass:
             print('uh oh')
         else:
             self.major_skills = major_skills
+
+    def __str__(self):
+        return '''Character class {} -
+Specialisation = {}
+Favoured attributes = {}
+Major skills = {}'''.format(self.name,self.specialisation,self.favoured_attributes,self.major_skills)
 
 class Character:
     def __init__(self,race,gender,character_class):
@@ -315,6 +322,13 @@ class Character:
             self.skills[x[0]] += x[1]
 
 
+
+    def __str__(self):
+        if self.gender == 'f':
+            friendly_gender = 'Female'
+        elif self.gender == 'm':
+            friendly_gender = 'Male'
+        return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
     def increase_skill(self, skill):
         self.skills[skill] += 1
