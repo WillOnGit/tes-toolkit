@@ -228,6 +228,30 @@ all_skills = [
     'speechcraft',
     ]
 
+skill_attribute_mappings = {
+    'acrobatics': 'speed',
+    'alchemy': 'intelligence',
+    'alteration': 'willpower',
+    'armorer': 'endurance',
+    'athletics': 'speed',
+    'blade': 'strength',
+    'block': 'endurance',
+    'blunt': 'strength',
+    'conjuration': 'intelligence',
+    'destruction': 'willpower',
+    'hand-to-hand': 'strength',
+    'heavy armor': 'endurance',
+    'illusion': 'personality',
+    'light armor': 'speed',
+    'marksman': 'agility',
+    'mercantile': 'personality',
+    'mysticism': 'intelligence',
+    'restoration': 'willpower',
+    'security': 'agility',
+    'sneak': 'agility',
+    'speechcraft': 'personality',
+    }
+
 all_specialisations = {
         'combat': [
             'armorer',
@@ -320,6 +344,26 @@ class Character:
 
         for x in all_races[self.race]['skills']:
             self.skills[x[0]] += x[1]
+
+        available_major_skill_ups = 0
+        for x in self.character_class.major_skills:
+            available_major_skill_ups += (100 - self.skills[x])
+        self.level_skill_cap = (available_major_skill_ups // 10) + 1
+
+        self.available_skill_ups = {x:0 for x in all_attributes}
+        for x in all_skills:
+            self.available_skill_ups[skill_attribute_mappings[x]] += (100 - self.skills[x])
+
+        # don't need to worry about remainders - guaranteed to be divisible by 5
+        self.required_attribute_ups = {x:(100 - self.attributes[x])//5 for x in all_attributes[:-1]}
+        self.required_attribute_ups['luck'] = (100 - self.attributes['luck'])
+
+        self.spare_skill_ups = {x:self.available_skill_ups[x] - 10*self.required_attribute_ups[x] for x in all_attributes[:-1]}
+        self.spare_skill_ups['luck'] =  self.level_skill_cap - self.required_attribute_ups['luck'] - 1
+
+        self.starting_attributes = self.attributes
+        self.starting_skills = self.skills
+        self.level_up_history = []
 
 
 
