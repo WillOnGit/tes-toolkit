@@ -307,34 +307,43 @@ Favoured attributes = {}
 Major skills = {}'''.format(self.name,self.specialisation,self.favoured_attributes,self.major_skills)
 
 class Character:
+    # TODO: add birthsign support
     def __init__(self,race,gender,character_class):
-        self.race = race
+        # validate and set race, gender, class
+        if race not in all_races:
+            print('uh oh')
+        else:
+            self.race = race
 
         if gender not in ['f','m']:
             print('uh oh')
         else:
             self.gender = gender
 
-        if race not in all_races:
-            print('uh oh')
-        else:
-            self.race = race
-
         if type(character_class) != CharacterClass:
             print('uh oh')
         else:
             self.character_class = character_class
 
-        self.level = 1
-
+        # calculate attributes from race+gender and class
+        # also initialise magicka
         if self.gender == 'f':
             self.attributes = {x: all_races[self.race][x][1] for x in all_attributes}
+            self.magicka = all_races[self.race]['magicka'][1]
         elif self.gender == 'm':
             self.attributes = {x: all_races[self.race][x][0] for x in all_attributes}
+            self.magicka = all_races[self.race]['magicka'][0]
 
         for x in self.character_class.favoured_attributes:
                 self.attributes[x] += 5
 
+        # calculate derived attributes
+        self.health = self.attributes['endurance'] * 2
+        self.magicka += self.attributes['intelligence'] * 2
+        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
+        self.encumbrance = self.attributes['strength'] * 5
+
+        # calculate skills from race and class
         self.skills = {x: 5 for x in all_skills}
         for x in self.character_class.major_skills:
             self.skills[x] = 25
@@ -345,27 +354,28 @@ class Character:
         for x in all_races[self.race]['skills']:
             self.skills[x[0]] += x[1]
 
+        # calculate level cap and levelling margin of error (available - required = spare)
         available_major_skill_ups = 0
-        for x in self.character_class.major_skills:
-            available_major_skill_ups += (100 - self.skills[x])
-        self.level_skill_cap = (available_major_skill_ups // 10) + 1
-
         self.available_skill_ups = {x:0 for x in all_attributes}
         for x in all_skills:
-            self.available_skill_ups[skill_attribute_mappings[x]] += (100 - self.skills[x])
-
-        # don't need to worry about remainders - guaranteed to be divisible by 5
+            ups = (100 - self.skills[x])
+            self.available_skill_ups[skill_attribute_mappings[x]] += ups
+            if x in self.character_class.major_skills:
+                available_major_skill_ups += ups
+        self.level_skill_cap = (available_major_skill_ups // 10) + 1
+        # don't need to worry about remainders on next line - guaranteed to be divisible by 5
         self.required_attribute_ups = {x:(100 - self.attributes[x])//5 for x in all_attributes[:-1]}
         self.required_attribute_ups['luck'] = (100 - self.attributes['luck'])
-
         self.spare_skill_ups = {x:self.available_skill_ups[x] - 10*self.required_attribute_ups[x] for x in all_attributes[:-1]}
         self.spare_skill_ups['luck'] =  self.level_skill_cap - self.required_attribute_ups['luck'] - 1
 
-        self.starting_attributes = self.attributes
-        self.starting_skills = self.skills
+        # calculate everything else
+        self.starting_attributes = self.attributes.copy()
+        self.starting_skills = self.skills.copy()
+        self.level = 1
         self.level_up_history = []
-
-
+        self.level_up_progress = 0
+        self.level_up_attribute_bonuses = {x:0 for x in all_attributes[:-1]}
 
     def __str__(self):
         if self.gender == 'f':
@@ -375,4 +385,4 @@ class Character:
         return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
     def increase_skill(self, skill):
-        self.skills[skill] += 1
+            self.skills[skill] += 1
