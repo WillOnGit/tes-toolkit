@@ -375,7 +375,8 @@ class Character:
         self.level = 1
         self.level_up_history = []
         self.level_up_progress = 0
-        self.level_up_attribute_bonuses = {x:0 for x in all_attributes[:-1]}
+        self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
+        self.level_up_available = False
 
     def __str__(self):
         if self.gender == 'f':
@@ -384,5 +385,75 @@ class Character:
             friendly_gender = 'Male'
         return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
-    def increase_skill(self, skill):
-            self.skills[skill] += 1
+    def increase_skill(self, skill, magnitude=1):
+        if self.level_up_available:
+            raise RuntimeError('Level up first')
+        if self.skills[skill] + magnitude > 100:
+            raise RuntimeError('Aborting safely - can\'t skill up past 100')
+
+        if skill in self.character_class.major_skills:
+            level_up_result = self.level_up_progress + magnitude
+            if level_up_result > 10:
+                raise RuntimeError('Aborting safely - this increase over-levels by {}'.format(level_up_result - 10))
+            self.level_up_progress += magnitude
+            self.skills[skill] += magnitude
+            self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+            if self.level_up_progress == 10:
+                # convert number of skill increase to attribute increase bonus
+                for x in all_attributes:
+                    if self.level_up_attribute_bonuses[x] == 0:
+                        self.level_up_attribute_bonuses[x] = 1
+                    elif 1 <= self.level_up_attribute_bonuses[x] <= 4:
+                        self.level_up_attribute_bonuses[x] = 2
+                    elif 5 <= self.level_up_attribute_bonuses[x] <= 7:
+                        self.level_up_attribute_bonuses[x] = 3
+                    elif 8 <= self.level_up_attribute_bonuses[x] <= 9:
+                        self.level_up_attribute_bonuses[x] = 4
+                    else:
+                        self.level_up_attribute_bonuses[x] = 5
+                self.level_up_history.append('TODO')
+                self.level_up_available = True
+                print('Level up available')
+
+        else:
+            self.skills[skill] += magnitude
+            self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+
+    def level_up(self,attributes='auto'):
+        # checks
+        if not self.level_up_available:
+            raise RuntimeError('Level up not available - aborting')
+        if attributes == 'auto':
+            candidates = []
+            for x in self.level_up_attribute_bonuses:
+                if self.level_up_attribute_bonuses[x] == 5:
+                    candidates.append(x)
+            if len(candidates) == 2:
+                attributes = candidates + ['luck']
+                print('Autodetection succeeded - detected {}'.format(attributes))
+            elif len(candidates) == 3:
+                attributes = candidates
+                print('Autodetection succeeded - detected {}'.format(attributes))
+            else:
+                raise RuntimeError('Autodetection failed - please specify attributes manually')
+        elif not all(x in all_attributes for x in attributes) or len(attributes) != 3:
+            raise RuntimeError('Invalid attributes')
+
+        # everything is ok - start level up by increasing attributes
+        for x in attributes:
+            self.attributes[x] += self.level_up_attribute_bonuses[x]
+
+        # recalculate derived attributes
+        self.health += self.attributes['endurance'] // 10
+        if 'endurance' in attributes:
+            self.health += self.level_up_attribute_bonuses['endurance'] * 2
+        if 'intelligence' in attributes:
+            self.magicka += self.level_up_attribute_bonuses['intelligence'] * 2
+        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
+        self.encumbrance = self.attributes['strength'] * 5
+
+        # reset various things and finally increment level
+        self.level_up_progress = 0
+        self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
+        self.level_up_available = False
+        self.level += 1
