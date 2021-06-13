@@ -307,8 +307,8 @@ Favoured attributes = {}
 Major skills = {}'''.format(self.name,self.specialisation,self.favoured_attributes,self.major_skills)
 
 class Character:
-    # TODO: add birthsign support
-    def __init__(self,race,gender,character_class):
+    # TODO (maybe): finish birthsign support
+    def __init__(self,race,gender,character_class,birthsign='apprentice'):
         # validate and set race, gender, class
         if race not in all_races:
             print('uh oh')
@@ -342,6 +342,10 @@ class Character:
         self.magicka += self.attributes['intelligence'] * 2
         self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
         self.encumbrance = self.attributes['strength'] * 5
+
+        # incomplete birthsign logic - apprentice only for now
+        if birthsign == 'apprentice':
+            self.magicka += 100
 
         # calculate skills from race and class
         self.skills = {x: 5 for x in all_skills}
