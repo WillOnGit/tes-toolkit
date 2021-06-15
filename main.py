@@ -1,3 +1,5 @@
+import pickle
+
 all_races = {
     'altmer': {
         'strength': (30, 30),
@@ -509,3 +511,18 @@ class Character:
         for x in all_attributes[:-1]:
             self.wasted_skill_ups[x] -= (self.attributes[x] - self.starting_attributes[x]) * 2
         self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.starting_attributes['luck'])
+
+def saveCharacter(character,savename='saved-character.pickle'):
+    with open(savename,'bw') as f:
+        f.write(pickle.dumps(character))
+
+def loadCharacter(savename='saved-character.pickle'):
+    global c
+    try:
+        with open(savename,'br') as f:
+            c = pickle.loads(f.read())
+        print('Saved character loaded as c')
+    except:
+        print('No saved character found')
+
+loadCharacter()
