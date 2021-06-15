@@ -372,6 +372,7 @@ class Character:
         self.required_attribute_ups['luck'] = (100 - self.attributes['luck'])
         self.spare_skill_ups = {x:self.available_skill_ups[x] - 10*self.required_attribute_ups[x] for x in all_attributes[:-1]}
         self.spare_skill_ups['luck'] =  self.level_skill_cap - self.required_attribute_ups['luck'] - 1
+        self.wasted_skill_ups = {x:0 for x in all_attributes}
 
         # calculate everything else
         self.starting_attributes = self.attributes.copy()
@@ -455,6 +456,17 @@ class Character:
             self.magicka += self.level_up_attribute_bonuses['intelligence'] * 2
         self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
         self.encumbrance = self.attributes['strength'] * 5
+
+        # wasted skill ups
+        self.wasted_skill_ups = {x:0 for x in all_attributes}
+        for x in all_skills:
+            self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.starting_skills[x]
+        # TODO (maybe): relax efficient levelling assumption
+        # works for efficient levelling only
+        for x in all_attributes[:-1]:
+            self.wasted_skill_ups[x] -= (self.attributes[x] - self.starting_attributes[x]) * 2
+        # luck differs slightly from override version - we haven't levelled up yet here!
+        self.wasted_skill_ups['luck'] = self.level - (self.attributes['luck'] - self.starting_attributes['luck'])
 
         # reset various things and finally increment level
         self.level_up_progress = 0
