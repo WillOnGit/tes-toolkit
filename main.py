@@ -344,7 +344,8 @@ class Character:
         self.encumbrance = self.attributes['strength'] * 5
 
         # incomplete birthsign logic - apprentice only for now
-        if birthsign == 'apprentice':
+        self.birthsign = birthsign
+        if self.birthsign == 'apprentice':
             self.magicka += 100
 
         # calculate skills from race and class
@@ -473,3 +474,38 @@ class Character:
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
         self.level += 1
+
+    def override(self,attributes,skills,health,level):
+        # assign blindly, check it's ok later
+        self.attributes = attributes
+        self.skills = skills
+        self.health = health
+        self.level = level
+
+        # resets due to uncertainty
+        self.level_up_history = []
+        self.level_up_progress = 0
+        self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
+        self.level_up_available = False
+
+        # recalculate derived things
+        # encumbrance
+        self.encumbrance = self.attributes['strength'] * 5
+        # magicka
+        if self.gender == 'f':
+            self.magicka = all_races[self.race]['magicka'][1]
+        elif self.gender == 'm':
+            self.magicka = all_races[self.race]['magicka'][0]
+        self.magicka += self.attributes['intelligence'] * 2
+        if self.birthsign == 'apprentice':
+            self.magicka += 100
+        # endurance
+        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
+        # wasted skill ups
+        self.wasted_skill_ups = {x:0 for x in all_attributes}
+        for x in all_skills:
+            self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.starting_skills[x]
+        # works for efficient levelling only
+        for x in all_attributes[:-1]:
+            self.wasted_skill_ups[x] -= (self.attributes[x] - self.starting_attributes[x]) * 2
+        self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.starting_attributes['luck'])
