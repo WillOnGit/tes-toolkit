@@ -507,10 +507,83 @@ class Character:
         self.wasted_skill_ups = {x:0 for x in all_attributes}
         for x in all_skills:
             self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.starting_skills[x]
+        # TODO (maybe): relax efficient levelling assumption
         # works for efficient levelling only
         for x in all_attributes[:-1]:
             self.wasted_skill_ups[x] -= (self.attributes[x] - self.starting_attributes[x]) * 2
         self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.starting_attributes['luck'])
+
+    def validate(self):
+        if self.level_up_progress != 0:
+            print('This currently only applies to level up milestones')
+            return -1
+        # the assumption here is that things set by __init__ are reliable
+        warnings = False
+
+        # basic attributes and skills checks
+        for x in self.attributes:
+            if not 1 <= self.attributes[x] <= 100:
+                print('Attributes out of bounds')
+                warnings = True
+        for x in self.skills:
+            if not 1 <= self.skills[x] <= 100:
+                print('Skills out of bounds')
+                warnings = True
+
+        # check impossible level
+        if not 1 <= self.level <= self.level_skill_cap:
+            print('Invalid level')
+            return 2
+
+        # check for nonsense wasted skill calculation
+        for x in self.wasted_skill_ups:
+            if self.wasted_skill_ups[x] < 0:
+                print('Inefficient levelling detected')
+                warnings = True
+
+        # does the level add up with the major skills?
+        major_skill_ups = 0
+        for x in self.character_class.major_skills:
+            major_skill_ups += self.skills[x] - self.starting_skills[x]
+
+        if self.level - 1 != major_skill_ups//10 or major_skill_ups%10 != 0:
+            print('Invalid major skills')
+            return 2
+
+        # do the level and attributes stack up?
+        efficient_attribute_ups = 0
+        for x in all_attributes[:-1]:
+            efficient_attribute_ups += (self.attributes[x] - self.starting_attributes[x])//5
+        efficient_attribute_ups += self.attributes['luck'] - self.starting_attributes['luck']
+        if efficient_attribute_ups != (self.level - 1) * 3:
+            print('Invalid/inefficient attribute increases detected')
+            warnings = True
+
+        # check health for efficiency
+        # won't work with starting endurance not divisible by 5
+        # - AFAIK this isn't possible, so won't worry for now
+        endurance_tracker = self.starting_attributes['endurance']
+        healthcheck = endurance_tracker * 2
+        if self.level > 1:
+            for x in range(2,self.level + 1):
+                if endurance_tracker != 100:
+                    endurance_tracker += 5
+                    healthcheck += (10 + endurance_tracker//10)
+                elif endurance_tracker == 100:
+                    healthcheck += 10
+                else:
+                    # this should never happen
+                    print('Something went wrong')
+                    return 2
+        if healthcheck != self.health:
+            print('Invalid/inefficient health')
+            warnings = True
+
+        if warnings:
+            return 1
+        else:
+            print('Everything looks good :)')
+            return 0
 
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
