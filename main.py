@@ -624,6 +624,23 @@ class Character:
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
 
+    def progressToLevelUp(self):
+        if self.level_up_available:
+            print('Go level up!')
+            return 1
+        print('''Working towards level {0}
+majors          {1:2}/10
+------------------
+STRENGTH        {2[strength]:2}
+INTELLIGENCE    {2[intelligence]:2}
+WILLPOWER *     {2[willpower]:2}
+AGILITY         {2[agility]:2}
+SPEED           {2[speed]:2}
+ENDURANCE *     {2[endurance]:2}
+PERSONALITY     {2[personality]:2}
+------------------'''.format(self.level + 1,self.level_up_progress,self.level_up_attribute_bonuses))
+
+
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
         f.write(pickle.dumps(character))
