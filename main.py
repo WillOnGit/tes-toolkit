@@ -430,6 +430,17 @@ class Character:
             self.skills[skill] += magnitude
             self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
 
+    def calculate_wasted_skill_ups(self):
+        # wasted skill ups
+        self.wasted_skill_ups = {x:0 for x in all_attributes}
+        for x in all_skills:
+            self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.level_up_history[1]['skills'][x]
+        # TODO (maybe): relax efficient levelling assumption
+        # works for efficient levelling only
+        for x in all_attributes[:-1]:
+            self.wasted_skill_ups[x] -= (self.attributes[x] - self.level_up_history[1]['attributes'][x]) * 2
+        self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
+
     def level_up(self,attributes='auto'):
         # checks
         if not self.level_up_available:
@@ -463,22 +474,12 @@ class Character:
         self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
         self.encumbrance = self.attributes['strength'] * 5
 
-        # wasted skill ups
-        self.wasted_skill_ups = {x:0 for x in all_attributes}
-        for x in all_skills:
-            self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.level_up_history[1]['skills'][x]
-        # TODO (maybe): relax efficient levelling assumption
-        # works for efficient levelling only
-        for x in all_attributes[:-1]:
-            self.wasted_skill_ups[x] -= (self.attributes[x] - self.level_up_history[1]['attributes'][x]) * 2
-        # luck differs slightly from override version - we haven't levelled up yet here!
-        self.wasted_skill_ups['luck'] = self.level - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
-
         # reset various things and finally increment level
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
         self.level += 1
+        self.calculate_wasted_skill_ups()
 
         # record character state now that level up has been completed
         self.level_up_history[self.level] = {
@@ -515,15 +516,7 @@ class Character:
             self.magicka += 100
         # endurance
         self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
-        # wasted skill ups
-        self.wasted_skill_ups = {x:0 for x in all_attributes}
-        for x in all_skills:
-            self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.level_up_history[1]['skills'][x]
-        # TODO (maybe): relax efficient levelling assumption
-        # works for efficient levelling only
-        for x in all_attributes[:-1]:
-            self.wasted_skill_ups[x] -= (self.attributes[x] - self.level_up_history[1]['attributes'][x]) * 2
-        self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
+        self.calculate_wasted_skill_ups()
 
         # record character state now that override has been completed
         self.level_up_history[self.level] = {
@@ -610,14 +603,7 @@ class Character:
         self.attributes = self.level_up_history[self.level]['attributes'].copy()
 
         # recalculate wasted skill ups
-        self.wasted_skill_ups = {x:0 for x in all_attributes}
-        for x in all_skills:
-            self.wasted_skill_ups[skill_attribute_mappings[x]] += self.skills[x] - self.level_up_history[1]['skills'][x]
-        # TODO (maybe): relax efficient levelling assumption
-        # works for efficient levelling only
-        for x in all_attributes[:-1]:
-            self.wasted_skill_ups[x] -= (self.attributes[x] - self.level_up_history[1]['attributes'][x]) * 2
-        self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
+        self.calculate_wasted_skill_ups()
 
         # reset level stuff
         self.level_up_progress = 0
@@ -633,13 +619,18 @@ majors          {1:2}/10
 ------------------
 STRENGTH        {2[strength]:2}
 INTELLIGENCE    {2[intelligence]:2}
-WILLPOWER *     {2[willpower]:2}
+WILLPOWER       {2[willpower]:2}
 AGILITY         {2[agility]:2}
 SPEED           {2[speed]:2}
-ENDURANCE *     {2[endurance]:2}
+ENDURANCE       {2[endurance]:2}
 PERSONALITY     {2[personality]:2}
 ------------------'''.format(self.level + 1,self.level_up_progress,self.level_up_attribute_bonuses))
 
+
+    def showStatus(self):
+        # pretty print relevant attributes (as in python)
+        # plot charts of progress etc.
+        pass
 
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
