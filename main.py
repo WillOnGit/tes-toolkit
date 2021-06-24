@@ -284,6 +284,12 @@ all_specialisations = {
             ]
         }
 
+character_journal_skill_order = []
+for x in all_specialisations:
+    for y in all_specialisations[x]:
+        character_journal_skill_order.append(y)
+
+
 class CharacterClass:
     def __init__(self, name, specialisation, favoured_attributes, major_skills):
         self.name = name
@@ -627,10 +633,70 @@ PERSONALITY     {2[personality]:2}
 ------------------'''.format(self.level + 1,self.level_up_progress,self.level_up_attribute_bonuses))
 
 
-    def showStatus(self):
-        # pretty print relevant attributes (as in python)
-        # plot charts of progress etc.
-        pass
+    def journal(self):
+        # print everything
+        print(f'''  ____ _                          _            
+ / ___| |__   __ _ _ __ __ _  ___| |_ ___ _ __ 
+| |   | '_ \ / _` | '__/ _` |/ __| __/ _ \ '__|
+| |___| | | | (_| | | | (_| | (__| ||  __/ |   
+ \____|_| |_|\__,_|_|  \__,_|\___|\__\___|_|   
+   _                              _ 
+  (_) ___  _   _ _ __ _ __   __ _| |
+  | |/ _ \| | | | '__| '_ \ / _` | |
+  | | (_) | |_| | |  | | | | (_| | |
+ _/ |\___/ \__,_|_|  |_| |_|\__,_|_|
+|__/                                
+
+LEVEL           {self.level:3}       STRENGTH        {self.attributes['strength']:3}
+CLASS           {self.character_class.name:10}INTELLIGENCE    {self.attributes['intelligence']:3}
+                          WILLPOWER       {self.attributes['willpower']:3}
+HEALTH          {self.health:3}       AGILITY         {self.attributes['agility']:3}
+MAGICKA         {self.magicka:3}       SPEED           {self.attributes['speed']:3}
+FATIGUE         {self.fatigue:3}       ENDURANCE       {self.attributes['endurance']:3}
+ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['personality']:3}
+                          LUCK            {self.attributes['luck']:3}
+==================
+   MAJOR SKILLS   
+==================''')
+        for x in character_journal_skill_order:
+            if x in self.character_class.major_skills:
+                print(f'{x:16}{self.skills[x]:3}')
+        print('''==================
+   MINOR SKILLS   
+==================''')
+        for x in character_journal_skill_order:
+            if x not in self.character_class.major_skills:
+                print(f'{x:16}{self.skills[x]:3}')
+
+    def minmax(self):
+        # set up progress bars for wasted/free skill ups
+        progress_bars = {}
+        for x in all_attributes:
+            result = round(50 * (self.wasted_skill_ups[x]/self.spare_skill_ups[x]))
+            if result == 0 and self.wasted_skill_ups[x] > 0:
+                progress_bars[x] = 1
+            else:
+                progress_bars[x] = result
+        print(f'''
+==================
+   MIN-MAX INFO   
+==================
+STRENGTH
+{self.wasted_skill_ups['strength']:3} {"#"*progress_bars['strength']}{"."*(50-progress_bars['strength'])} {self.spare_skill_ups['strength']:3}
+INTELLIGENCE
+{self.wasted_skill_ups['intelligence']:3} {"#"*progress_bars['intelligence']}{"."*(50-progress_bars['intelligence'])} {self.spare_skill_ups['intelligence']:3}
+WILLPOWER
+{self.wasted_skill_ups['willpower']:3} {"#"*progress_bars['willpower']}{"."*(50-progress_bars['willpower'])} {self.spare_skill_ups['willpower']:3}
+AGILITY
+{self.wasted_skill_ups['agility']:3} {"#"*progress_bars['agility']}{"."*(50-progress_bars['agility'])} {self.spare_skill_ups['agility']:3}
+SPEED
+{self.wasted_skill_ups['speed']:3} {"#"*progress_bars['speed']}{"."*(50-progress_bars['speed'])} {self.spare_skill_ups['speed']:3}
+ENDURANCE
+{self.wasted_skill_ups['endurance']:3} {"#"*progress_bars['endurance']}{"."*(50-progress_bars['endurance'])} {self.spare_skill_ups['endurance']:3}
+PERSONALITY
+{self.wasted_skill_ups['personality']:3} {"#"*progress_bars['personality']}{"."*(50-progress_bars['personality'])} {self.spare_skill_ups['personality']:3}
+LUCK
+{self.wasted_skill_ups['luck']:3} {"#"*progress_bars['luck']}{"."*(50-progress_bars['luck'])} {self.spare_skill_ups['luck']:3}''')
 
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
