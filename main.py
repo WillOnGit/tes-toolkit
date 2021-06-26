@@ -677,9 +677,8 @@ ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['per
                 progress_bars[x] = 1
             else:
                 progress_bars[x] = result
-        print(f'''
-==================
-   MIN-MAX INFO   
+        print(f'''==================
+ SKILL UP MARGINS 
 ==================
 STRENGTH
 {self.wasted_skill_ups['strength']:3} {"#"*progress_bars['strength']}{"."*(50-progress_bars['strength'])} {self.spare_skill_ups['strength']:3}
@@ -697,6 +696,27 @@ PERSONALITY
 {self.wasted_skill_ups['personality']:3} {"#"*progress_bars['personality']}{"."*(50-progress_bars['personality'])} {self.spare_skill_ups['personality']:3}
 LUCK
 {self.wasted_skill_ups['luck']:3} {"#"*progress_bars['luck']}{"."*(50-progress_bars['luck'])} {self.spare_skill_ups['luck']:3}''')
+        # forecast attributes at max level
+        # print level, attributes/skills (presumably all 100), health, magicka, fatigue, encumbrance
+
+        # calculate optimal health
+        # won't work with starting endurance not divisible by 5
+        # - AFAIK this isn't possible, so won't worry for now
+        endurance_tracker = self.level_up_history[1]['attributes']['endurance']
+        max_health = endurance_tracker * 2
+        lvl = 1
+        while lvl < self.level_skill_cap:
+            lvl += 1
+            if endurance_tracker != 100:
+                endurance_tracker += 5
+                max_health += (10 + endurance_tracker//10)
+            elif endurance_tracker == 100:
+                max_health += 10
+        print(f'''==================
+ FINAL STATISTICS 
+==================
+Max level  = {self.level_skill_cap}
+Max health = {max_health}''')
 
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
