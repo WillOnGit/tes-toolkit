@@ -392,6 +392,7 @@ class Character:
                     'attributes': self.attributes.copy(),
                     }
                 }
+        self.times_trained_this_level = 0
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
@@ -403,11 +404,13 @@ class Character:
             friendly_gender = 'Male'
         return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
-    def increase_skill(self, skill, magnitude=1):
+    def increase_skill(self, skill, magnitude=1, trained=False):
         if self.level_up_available:
             raise RuntimeError('Level up first')
         if self.skills[skill] + magnitude > 100:
             raise RuntimeError('Aborting safely - can\'t skill up past 100')
+        if trained and self.times_trained_this_level + magnitude > 5:
+            raise RuntimeError('Aborting - this exceeds the training limit for this level')
 
         if skill in self.character_class.major_skills:
             level_up_result = self.level_up_progress + magnitude
@@ -416,6 +419,8 @@ class Character:
             self.level_up_progress += magnitude
             self.skills[skill] += magnitude
             self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+            if trained:
+                self.times_trained_this_level += magnitude
             if self.level_up_progress == 10:
                 # convert number of skill increase to attribute increase bonus
                 for x in all_attributes:
@@ -435,6 +440,8 @@ class Character:
         else:
             self.skills[skill] += magnitude
             self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+            if trained:
+                self.times_trained_this_level += magnitude
 
     def calculate_wasted_skill_ups(self):
         # wasted skill ups
@@ -481,6 +488,7 @@ class Character:
         self.encumbrance = self.attributes['strength'] * 5
 
         # reset various things and finally increment level
+        self.times_trained_this_level = 0
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
@@ -612,6 +620,7 @@ class Character:
         self.calculate_wasted_skill_ups()
 
         # reset level stuff
+        self.times_trained_this_level = 0
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
@@ -630,7 +639,8 @@ AGILITY         {2[agility]:2}
 SPEED           {2[speed]:2}
 ENDURANCE       {2[endurance]:2}
 PERSONALITY     {2[personality]:2}
-------------------'''.format(self.level + 1,self.level_up_progress,self.level_up_attribute_bonuses))
+------------------
+Times trained    {3}/5'''.format(self.level + 1,self.level_up_progress,self.level_up_attribute_bonuses,self.times_trained_this_level))
 
 
     def journal(self):
