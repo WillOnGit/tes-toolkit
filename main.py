@@ -289,7 +289,6 @@ for x in all_specialisations:
     for y in all_specialisations[x]:
         character_journal_skill_order.append(y)
 
-
 class CharacterClass:
     def __init__(self, name, specialisation, favoured_attributes, major_skills):
         self.name = name
@@ -629,18 +628,14 @@ class Character:
         if self.level_up_available:
             print('Go level up!')
             return 1
-        print('''Working towards level {0}
-majors          {1:2}/10
-------------------
-STRENGTH        {2[strength]:2}
-INTELLIGENCE    {2[intelligence]:2}
-WILLPOWER       {2[willpower]:2}
-AGILITY         {2[agility]:2}
-SPEED           {2[speed]:2}
-ENDURANCE       {2[endurance]:2}
-PERSONALITY     {2[personality]:2}
-------------------
-Times trained    {3}/5'''.format(self.level + 1,self.level_up_progress,self.level_up_attribute_bonuses,self.times_trained_this_level))
+        print(f'''Working towards level {self.level + 1}
+majors          {self.level_up_progress:2}/10
+------------------''')
+        under_100_attributes = [x for x in all_attributes[:-1] if self.attributes[x] < 100]
+        for x in under_100_attributes:
+            print(f'{x.upper():16}{self.level_up_attribute_bonuses[x]:2}')
+        print(f'''------------------
+Times trained    {self.times_trained_this_level}/5''')
 
 
     def journal(self):
@@ -679,33 +674,19 @@ ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['per
                 print(f'{x:16}{self.skills[x]:3}')
 
     def minmax(self):
-        # set up progress bars for wasted/free skill ups
-        progress_bars = {}
-        for x in all_attributes:
-            result = round(50 * (self.wasted_skill_ups[x]/self.spare_skill_ups[x]))
-            if result == 0 and self.wasted_skill_ups[x] > 0:
-                progress_bars[x] = 1
-            else:
-                progress_bars[x] = result
-        print(f'''==================
+        # check which attributes are still being levelled
+        under_100_attributes = [x for x in all_attributes if self.attributes[x] < 100]
+        # lists are false iff empty
+        if under_100_attributes:
+            print('''==================
  SKILL UP MARGINS 
-==================
-STRENGTH
-{self.wasted_skill_ups['strength']:3} {"#"*progress_bars['strength']}{"."*(50-progress_bars['strength'])} {self.spare_skill_ups['strength']:3}
-INTELLIGENCE
-{self.wasted_skill_ups['intelligence']:3} {"#"*progress_bars['intelligence']}{"."*(50-progress_bars['intelligence'])} {self.spare_skill_ups['intelligence']:3}
-WILLPOWER
-{self.wasted_skill_ups['willpower']:3} {"#"*progress_bars['willpower']}{"."*(50-progress_bars['willpower'])} {self.spare_skill_ups['willpower']:3}
-AGILITY
-{self.wasted_skill_ups['agility']:3} {"#"*progress_bars['agility']}{"."*(50-progress_bars['agility'])} {self.spare_skill_ups['agility']:3}
-SPEED
-{self.wasted_skill_ups['speed']:3} {"#"*progress_bars['speed']}{"."*(50-progress_bars['speed'])} {self.spare_skill_ups['speed']:3}
-ENDURANCE
-{self.wasted_skill_ups['endurance']:3} {"#"*progress_bars['endurance']}{"."*(50-progress_bars['endurance'])} {self.spare_skill_ups['endurance']:3}
-PERSONALITY
-{self.wasted_skill_ups['personality']:3} {"#"*progress_bars['personality']}{"."*(50-progress_bars['personality'])} {self.spare_skill_ups['personality']:3}
-LUCK
-{self.wasted_skill_ups['luck']:3} {"#"*progress_bars['luck']}{"."*(50-progress_bars['luck'])} {self.spare_skill_ups['luck']:3}''')
+==================''')
+            for x in under_100_attributes:
+                progress = round(50 * (self.wasted_skill_ups[x]/self.spare_skill_ups[x]))
+                if progress == 0 and self.wasted_skill_ups[x] > 0:
+                    progress = 1
+                print(f'''{x.upper()}
+{self.wasted_skill_ups[x]:3} {"#"*progress}{"."*(50-progress)} {self.spare_skill_ups[x]:3}''')
         # forecast attributes at max level
         # print level, attributes/skills (presumably all 100), health, magicka, fatigue, encumbrance
 
@@ -727,6 +708,20 @@ LUCK
 ==================
 Max level  = {self.level_skill_cap}
 Max health = {max_health}''')
+
+        # if no attributes being levelled, we should be done:
+        # check that things add up
+        if not under_100_attributes:
+            if self.level == self.level_skill_cap and self.health == max_health:
+                print(''' _   _  ___   ___  ____      _ __   ___ 
+| | | |/ _ \ / _ \|  _ \    / \\ \ / / |
+| |_| | | | | | | | |_) |  / _ \\ V /| |
+|  _  | |_| | |_| |  _ <  / ___ \| | |_|
+|_| |_|\___/ \___/|_| \_\/_/   \_\_| (_)
+
+You did it, kid.''')
+            else:
+                print(':( why did this have to happen?')
 
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
