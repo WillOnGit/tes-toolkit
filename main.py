@@ -453,35 +453,55 @@ class Character:
             self.wasted_skill_ups[x] -= (self.attributes[x] - self.level_up_history[1]['attributes'][x]) * 2
         self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
 
-    def level_up(self,attributes='auto'):
+    def levelUp(self,attributes_to_raise='auto'):
         # checks
         if not self.level_up_available:
             raise RuntimeError('Level up not available - aborting')
-        if attributes == 'auto':
-            candidates = []
-            for x in self.level_up_attribute_bonuses:
-                if self.level_up_attribute_bonuses[x] == 5:
-                    candidates.append(x)
-            if len(candidates) == 2:
-                attributes = candidates + ['luck']
-                print('Autodetection succeeded - detected {}'.format(attributes))
-            elif len(candidates) == 3:
-                attributes = candidates
-                print('Autodetection succeeded - detected {}'.format(attributes))
+        under_100_attributes = [x for x in all_attributes if self.attributes[x] < 100]
+        if not under_100_attributes:
+            raise RuntimeError('All attributes are 100 - aborting')
+
+        # attributes are available to increase: check how many
+        number_of_attributes_to_raise = min(3,len(under_100_attributes))
+        # autodetecting attributes to raise
+        if attributes_to_raise == 'auto':
+            if number_of_attributes_to_raise == len(under_100_attributes):
+                attributes_to_raise = under_100_attributes
+                print(f'Autodetection succeeded - detected {attributes_to_raise}')
+                should_continue = 'yes'
             else:
-                raise RuntimeError('Autodetection failed - please specify attributes manually')
-        elif not all(x in all_attributes for x in attributes) or len(attributes) != 3:
+                candidates = []
+                for x in under_100_attributes:
+                    if self.level_up_attribute_bonuses[x] == 5:
+                        candidates.append(x)
+                if len(candidates) == 2:
+                    attributes_to_raise = candidates + ['luck']
+                    print(f'Autodetection succeeded - detected {attributes_to_raise}')
+                    should_continue = input('Are you happy with these attributes? Type \'yes\' to proceed\n')
+                elif len(candidates) == 3:
+                    attributes_to_raise = candidates
+                    print(f'Autodetection succeeded - detected {attributes_to_raise}')
+                    should_continue = input('Are you happy with these attributes? Type \'yes\' to proceed\n')
+                else:
+                    raise RuntimeError('Autodetection failed - please specify attributes manually')
+            if should_continue != 'yes':
+                raise RuntimeError('Aborting - autodetected attributes rejected. Please specify attributes manually')
+
+        # accepting user input of attributes to raise - check for validity
+        elif not all(x in under_100_attributes for x in attributes_to_raise) or len(attributes_to_raise) != number_of_attributes_to_raise:
             raise RuntimeError('Invalid attributes')
 
         # everything is ok - start level up by increasing attributes
-        for x in attributes:
+        for x in attributes_to_raise:
             self.attributes[x] += self.level_up_attribute_bonuses[x]
+            if self.attributes[x] > 100:
+                self.attributes[x] = 100
 
         # recalculate derived attributes
         self.health += self.attributes['endurance'] // 10
-        if 'endurance' in attributes:
+        if 'endurance' in attributes_to_raise:
             self.health += self.level_up_attribute_bonuses['endurance'] * 2
-        if 'intelligence' in attributes:
+        if 'intelligence' in attributes_to_raise:
             self.magicka += self.level_up_attribute_bonuses['intelligence'] * 2
         self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
         self.encumbrance = self.attributes['strength'] * 5
