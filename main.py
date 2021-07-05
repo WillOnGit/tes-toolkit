@@ -34,7 +34,7 @@ all_races = {
             ('alchemy',5),
             ('athletics',10),
             ('blade',5),
-            ('hand to hand',5),
+            ('hand-to-hand',5),
             ('illusion',5),
             ('mysticism',5),
             ('security',10),
@@ -111,7 +111,7 @@ all_races = {
         'skills': [
             ('blade',5),
             ('blunt',5),
-            ('hand to hand',5),
+            ('hand-to-hand',5),
             ('heavy armor',10),
             ('mercantile',10),
             ('speechcraft',10),
@@ -131,7 +131,7 @@ all_races = {
             ('acrobatics',10),
             ('athletics',5),
             ('blade',5),
-            ('hand to hand',10),
+            ('hand-to-hand',10),
             ('light armor',5),
             ('security',5),
             ('sneak',5),
@@ -170,7 +170,7 @@ all_races = {
             ('armorer',10),
             ('block',10),
             ('blunt',10),
-            ('hand to hand',5),
+            ('hand-to-hand',5),
             ('heavy armor',10),
     ]
     },
@@ -293,19 +293,16 @@ class CharacterClass:
     def __init__(self, name, specialisation, favoured_attributes, major_skills):
         self.name = name
         if specialisation not in ['combat','magic','stealth']:
-            print('uh oh')
-        else:
-            self.specialisation = specialisation
+            raise RuntimeError('Invalid specialisation')
+        self.specialisation = specialisation
 
         if len(favoured_attributes) != 2 or not all([x in all_attributes for x in favoured_attributes]):
-            print('uh oh')
-        else:
-            self.favoured_attributes = favoured_attributes
+            raise RuntimeError('Invalid favoured attributes')
+        self.favoured_attributes = favoured_attributes
 
         if len(major_skills) != 7 or not all([x in all_skills for x in major_skills]):
-            print('uh oh')
-        else:
-            self.major_skills = major_skills
+            raise RuntimeError('Invalid major skills')
+        self.major_skills = major_skills
 
     def __str__(self):
         return '''Character class {} -
@@ -318,19 +315,16 @@ class Character:
     def __init__(self,race,gender,character_class,birthsign='apprentice'):
         # validate and set race, gender, class
         if race not in all_races:
-            print('uh oh')
-        else:
-            self.race = race
+            raise RuntimeError('Invalid race - in the narrow context of TES4: Oblivion anyway :)')
+        self.race = race
 
         if gender not in ['f','m']:
-            print('uh oh')
-        else:
-            self.gender = gender
+            raise RuntimeError('Invalid gender - in the narrow context of TES4: Oblivion anyway :)')
+        self.gender = gender
 
         if type(character_class) != CharacterClass:
-            print('uh oh')
-        else:
-            self.character_class = character_class
+            raise RuntimeError('Invalid class')
+        self.character_class = character_class
 
         # calculate attributes from race+gender and class
         # also initialise magicka
@@ -354,6 +348,8 @@ class Character:
         self.birthsign = birthsign
         if self.birthsign == 'apprentice':
             self.magicka += 100
+        else:
+            print('warning - only the apprentice birthsign is implemented for now. skipping')
 
         # calculate skills from race and class
         self.skills = {x: 5 for x in all_skills}
