@@ -43,7 +43,7 @@ c.journal()
 c.progressToLevelUp()
 
 # increase a skill when it happens in-game
-c.increase_skill('block')
+c.increase_skill('heavy armor')
 
 # increase a single skill by more than one - useful when catching up or at low levels with rapid increases
 c.increase_skill('armorer',9)
@@ -56,7 +56,7 @@ c.progressToLevelUp()
 # level up - increase tenth major skill and call levelUp
 # endurance, intelligence and luck will be automatically detected as the best attributes to raise
 # confirm interactively and you're level 2
-c.increase_skill('conjuration',6)
+c.increase_skill('conjuration',7)
 c.levelUp()
 yes
 c.journal()
@@ -74,11 +74,13 @@ c.levelUp(['strength','agility','luck'])
 # show how we're doing in the overall scheme of minmaxing
 c.minmax()
 
-# import an existing character at a level greater than 1. only works assuming a level up has just taken place
-attributes = {'strength': 30, 'intelligence': 75, 'willpower': 100, 'agility': 30, 'speed': 50, 'endurance': 100, 'personality': 40, 'luck': 64}
-skills = {'acrobatics': 24, 'alchemy': 50, 'alteration': 88, 'armorer': 55, 'athletics': 43, 'blade': 30, 'block': 53, 'blunt': 11, 'conjuration': 59, 'destruction': 69, 'hand-to-hand': 34, 'heavy armor': 58, 'illusion': 47, 'light armor': 36, 'marksman': 28, 'mercantile': 29, 'mysticism': 50, 'restoration': 50, 'security': 22, 'sneak': 13, 'speechcraft': 26}
-health = 288
-level = 14
+# import an existing character at a level greater than 1.
+# only works assuming a level up has just taken place
+
+attributes = {'strength': 35, 'intelligence': 80, 'willpower': 100, 'agility': 30, 'speed': 50, 'endurance': 100, 'personality': 40, 'luck': 65}
+skills = {'acrobatics': 24, 'alchemy': 50, 'alteration': 88, 'armorer': 55, 'athletics': 43, 'blade': 30, 'block': 53, 'blunt': 11, 'conjuration': 61, 'destruction': 69, 'hand-to-hand': 34, 'heavy armor': 58, 'illusion': 47, 'light armor': 36, 'marksman': 28, 'mercantile': 29, 'mysticism': 54, 'restoration': 55, 'security': 22, 'sneak': 13, 'speechcraft': 26}
+health = 298
+level = 15
 c.override(attributes,skills,health,level)
 # make sure everything checks out
 c.validate()
