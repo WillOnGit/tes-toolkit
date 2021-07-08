@@ -669,7 +669,7 @@ Times trained    {self.times_trained_this_level}/5''')
 |__/                                
 
 LEVEL           {self.level:3}       STRENGTH        {self.attributes['strength']:3}
-CLASS           {self.character_class.name:10}INTELLIGENCE    {self.attributes['intelligence']:3}
+CLASS{self.character_class.name:>14}       INTELLIGENCE    {self.attributes['intelligence']:3}
                           WILLPOWER       {self.attributes['willpower']:3}
 HEALTH          {self.health:3}       AGILITY         {self.attributes['agility']:3}
 MAGICKA         {self.magicka:3}       SPEED           {self.attributes['speed']:3}
