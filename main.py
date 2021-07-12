@@ -815,4 +815,28 @@ def loadCharacter(savename='saved-character.pickle'):
     except:
         print('No saved character found')
 
+default_classes = {
+        'acrobat': CharacterClass('Acrobat','stealth',['agility','endurance'],['blade','block','acrobatics','marksman','security','sneak','speechcraft']),
+        'agent': CharacterClass('Agent','stealth',['agility','personality'],['illusion','acrobatics','marksman','mercantile','security','sneak','speechcraft']),
+        'archer': CharacterClass('Archer','combat',['agility','strength'],['armorer','blade','blunt','hand-to-hand','light armor','marksman','sneak']),
+        'assassin': CharacterClass('Assassin','stealth',['intelligence','speed'],['blade','alchemy','acrobatics','light armor','marksman','security','sneak']),
+        'barbarian': CharacterClass('Barbarian','combat',['speed','strength'],['armorer','athletics','blade','block','blunt','hand-to-hand','light armor']),
+        'bard': CharacterClass('Bard','stealth',['intelligence','personality'],['blade','block','alchemy','illusion','light armor','mercantile','speechcraft']),
+        'battlemage': CharacterClass('Battlemage','magic',['intelligence','strength'],['blade','blunt','alchemy','alteration','conjuration','destruction','mysticism']),
+        'crusader': CharacterClass('Crusader','combat',['strength','willpower'],['athletics','blade','blunt','hand-to-hand','heavy armor','destruction','restoration']),
+        'healer': CharacterClass('Healer','magic',['personality','willpower'],['alchemy','alteration','destruction','illusion','restoration','mercantile','speechcraft']),
+        'knight': CharacterClass('Knight','combat',['personality','strength'],['blade','block','blunt','hand-to-hand','heavy armor','illusion','speechcraft']),
+        'mage': CharacterClass('Mage','magic',['intelligence','willpower'],['alchemy','alteration','conjuration','destruction','illusion','mysticism','restoration']),
+        'monk': CharacterClass('Monk','stealth',['agility','willpower'],['athletics','hand-to-hand','alteration','acrobatics','marksman','security','sneak']),
+        'nightblade': CharacterClass('Nightblade','magic',['speed','willpower'],['athletics','blade','alteration','destruction','restoration','acrobatics','light armor']),
+        'pilgrim': CharacterClass('Pilgrim','stealth',['endurance','personality'],['armorer','block','blunt','light armor','mercantile','security','speechcraft']),
+        'rogue': CharacterClass('Rogue','combat',['personality','speed'],['athletics','blade','block','alchemy','illusion','light armor','mercantile']),
+        'scout': CharacterClass('Scout','combat',['endurance','speed'],['armorer','athletics','blade','block','alchemy','acrobatics','light armor']),
+        'sorcerer': CharacterClass('Sorcerer','magic',['endurance','intelligence'],['heavy armor','alchemy','alteration','conjuration','destruction','mysticism','restoration']),
+        'spellsword': CharacterClass('Spellsword','magic',['endurance','willpower'],['blade','block','heavy armor','alteration','destruction','illusion','restoration']),
+        'thief': CharacterClass('Thief','stealth',['agility','speed'],['acrobatics','light armor','marksman','mercantile','security','sneak','speechcraft']),
+        'warrior': CharacterClass('Warrior','combat',['endurance','strength'],['armorer','athletics','blade','block','blunt','hand-to-hand','heavy armor']),
+        'witchhunter': CharacterClass('Witchhunter','magic',['agility','intelligence'],['athletics','alchemy','conjuration','destruction','mysticism','marksman','security']),
+        }
+
 loadCharacter()
