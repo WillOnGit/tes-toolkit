@@ -690,6 +690,7 @@ ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['per
                 print(f'{x:16}{self.skills[x]:3}')
 
     def minmax(self):
+        # 1/3 - print skill-up margin of error
         # check which attributes are still being levelled
         under_100_attributes = [x for x in all_attributes if self.attributes[x] < 100]
         # lists are false iff empty
@@ -703,9 +704,54 @@ ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['per
                     progress = 1
                 print(f'''{x.upper()}
 {self.wasted_skill_ups[x]:3} {"#"*progress}{"."*(50-progress)} {self.spare_skill_ups[x]:3}''')
-        # forecast attributes at max level
-        # print level, attributes/skills (presumably all 100), health, magicka, fatigue, encumbrance
 
+        # 2/3 - check fastest route to all attributes (except luck) 100 - "7x100" hereafter
+        # only supports +5 +5 +1 strategies for now
+        # ASSUMPTION: player has enough levels to get 100s all round
+        #
+        # remove luck from consideration, as always increased in +5 +5 +1
+            print('''
+==================
+ATTRIBUTE ORDERING
+==================''')
+        under_100_attributes_no_luck = under_100_attributes.copy()
+        if 'luck' in under_100_attributes_no_luck:
+            under_100_attributes_no_luck.remove('luck')
+        if under_100_attributes_no_luck:
+            # find lowest attribute and how many increase are left
+            lowest_attribute = min(self.attributes)
+            lowest_attribute_increases_remaining = (100 - self.attributes[lowest_attribute])//5
+            # get other attributes which need increasing
+            other_under_100_attributes = under_100_attributes_no_luck.copy()
+            other_under_100_attributes.remove(lowest_attribute)
+            # see how many increases they need
+            other_increases_remaining = 0
+            for x in other_under_100_attributes:
+                other_increases_remaining += (100 - self.attributes[x])//5
+            # make the judgment - free when others greater than, tight when equal or within 1
+            difference = other_increases_remaining - lowest_attribute_increases_remaining
+            if difference > 0:
+                # there's leeway, let's calculate how much
+                print(f'''
+Status: OK
+
+Increase attributes in any order, although there are only
+{(difference + 1)//2} spare level ups until you need to increase {lowest_attribute.upper()}''')
+            elif difference in [-1,0]:
+                print(f'''
+Status: WARNING
+
+Optimal 7x100 level can still be achieved but you must increase
+{lowest_attribute.upper()} (or one at the same level) this level up''')
+            else:
+                print(f'{lowest_attribute} should be increased but 7x100 will already be reached late.')
+        else:
+            print('Nothing to consider here!')
+
+        # 3/3 - forecast attributes at max level
+        # print level, health, magicka, fatigue, encumbrance
+        # skills can always all reach 100. I think but haven't verified that it's always possible for all attributes to reach 100 too
+        #
         # calculate optimal health
         # won't work with starting endurance not divisible by 5
         # - AFAIK this isn't possible, so won't worry for now
@@ -719,11 +765,28 @@ ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['per
                 max_health += (10 + endurance_tracker//10)
             elif endurance_tracker == 100:
                 max_health += 10
-        print(f'''==================
- FINAL STATISTICS 
+        # calculate optimal magicka
+        max_magicka = 200
+        if self.gender == 'f':
+            max_magicka += all_races[self.race]['magicka'][1]
+        elif self.gender == 'm':
+            max_magicka += all_races[self.race]['magicka'][0]
+        if self.birthsign == 'apprentice':
+            max_magicka += 100
+
+        # max fatigue and encumbrance are always the same
+        max_fatigue = 400
+        max_encumbrance = 500
+
+        print(f'''
 ==================
-Max level  = {self.level_skill_cap}
-Max health = {max_health}''')
+ IDEAL STATISTICS 
+==================
+Level       = {self.level_skill_cap:3}
+Health      = {max_health:3}
+Magicka     = {max_magicka:3}
+Fatigue     = {max_fatigue:3}
+Encumbrance = {max_encumbrance:3}''')
 
         # if no attributes being levelled, we should be done:
         # check that things add up
