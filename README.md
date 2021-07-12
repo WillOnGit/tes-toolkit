@@ -26,17 +26,15 @@ python3 -i main.py
 Existing data will automatically be loaded if found.
 
 ### Setup
-Most people will want to create a class with a name, specialisation, favoured attributes and major skills, then create a character with a race, gender and class.
+Most people will want to create a class with a name, specialisation, favoured attributes and major skills, then create a character with a race, gender, class and birthsign.
 The 21 default classes are included for completeness' sake, however.
-
-Note that birthsign support is currently restricted to the apprentice, although this can be disabled by passing anything else as a birthsign (fourth parameter to character).
 ```
 # create a custom class - use this to follow rest of tutorial
 myclass = CharacterClass('Class name','magic',['endurance','luck'],['alchemy','alteration','block','conjuration','hand-to-hand','light armor','marksman'])
-c = Character('breton','f',myclass)
+c = Character('breton','f',myclass,'apprentice')
 
-# alternative - use a default class with no birthsign
-c = Character('imperial','m',default_classes['battlemage'],None)
+# alternative - use a default class
+c = Character('imperial','m',default_classes['battlemage'],'lady')
 ```
 
 ### Core usage loop

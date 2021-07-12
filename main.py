@@ -230,6 +230,22 @@ all_skills = [
     'speechcraft',
     ]
 
+all_birthsigns = [
+    'apprentice',
+    'atronach',
+    'lady',
+    'lord',
+    'lover',
+    'mage',
+    'ritual',
+    'serpent',
+    'shadow',
+    'steed',
+    'thief',
+    'tower',
+    'warrior',
+    ]
+
 skill_attribute_mappings = {
     'acrobatics': 'speed',
     'alchemy': 'intelligence',
@@ -311,8 +327,7 @@ Favoured attributes = {}
 Major skills = {}'''.format(self.name,self.specialisation,self.favoured_attributes,self.major_skills)
 
 class Character:
-    # TODO (maybe): finish birthsign support
-    def __init__(self,race,gender,character_class,birthsign='apprentice'):
+    def __init__(self,race,gender,character_class,birthsign):
         # validate and set race, gender, class
         if race not in all_races:
             raise RuntimeError('Invalid race - in the narrow context of TES4: Oblivion anyway :)')
@@ -327,38 +342,53 @@ class Character:
         self.character_class = character_class
 
         # calculate attributes from race+gender and class
-        # also initialise magicka
+        # also initialise magicka bonus
         if self.gender == 'f':
             self.attributes = {x: all_races[self.race][x][1] for x in all_attributes}
-            self.magicka = all_races[self.race]['magicka'][1]
+            self.magicka_racial_bonus = all_races[self.race]['magicka'][1]
         elif self.gender == 'm':
             self.attributes = {x: all_races[self.race][x][0] for x in all_attributes}
-            self.magicka = all_races[self.race]['magicka'][0]
-
+            self.magicka_racial_bonus = all_races[self.race]['magicka'][0]
         for x in self.character_class.favoured_attributes:
                 self.attributes[x] += 5
 
-        # calculate derived attributes
-        self.health = self.attributes['endurance'] * 2
-        self.magicka += self.attributes['intelligence'] * 2
-        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
-        self.encumbrance = self.attributes['strength'] * 5
-
-        # incomplete birthsign logic - apprentice only for now
+        # handle birthsign
+        if birthsign not in all_birthsigns:
+            raise RuntimeError('Invalid birthsign')
         self.birthsign = birthsign
+        self.magicka_birthsign_bonus = 0
         if self.birthsign == 'apprentice':
-            self.magicka += 100
+            self.magicka_birthsign_bonus = 100
+        elif self.birthsign == 'atronach':
+            self.magicka_birthsign_bonus = 150
+        elif self.birthsign == 'lady':
+            self.attributes['willpower'] += 10
+            self.attributes['endurance'] += 10
+        elif self.birthsign == 'mage':
+            self.magicka_birthsign_bonus = 50
+        elif self.birthsign == 'steed':
+            self.attributes['speed'] += 20
+        elif self.birthsign == 'thief':
+            self.attributes['agility'] += 10
+            self.attributes['luck'] += 10
+            self.attributes['speed'] += 10
+        elif self.birthsign == 'warrior':
+            self.attributes['endurance'] += 10
+            self.attributes['strength'] += 10
         else:
-            print('warning - only the apprentice birthsign is implemented for now. skipping')
+            # nothing which interests us here
+            pass
+
+        # initialise health and calculate derived attributes
+        self.health = self.attributes['endurance'] * 2
+        self.calculateDerivedAttributes()
 
         # calculate skills from race and class
         self.skills = {x: 5 for x in all_skills}
         for x in self.character_class.major_skills:
             self.skills[x] = 25
-
         for x in all_specialisations[self.character_class.specialisation]:
             self.skills[x] += 5
-
         for x in all_races[self.race]['skills']:
             self.skills[x[0]] += x[1]
 
@@ -449,6 +479,12 @@ class Character:
             self.wasted_skill_ups[x] -= (self.attributes[x] - self.level_up_history[1]['attributes'][x]) * 2
         self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
 
+    def calculateDerivedAttributes(self):
+        # we can't handle health here as it relies on state
+        self.magicka = self.attributes['intelligence'] * 2 + self.magicka_birthsign_bonus + self.magicka_racial_bonus
+        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
+        self.encumbrance = self.attributes['strength'] * 5
+
     def levelUp(self,attributes_to_raise='auto'):
         # checks
         if not self.level_up_available:
@@ -497,10 +533,7 @@ class Character:
         self.health += self.attributes['endurance'] // 10
         if 'endurance' in attributes_to_raise:
             self.health += self.level_up_attribute_bonuses['endurance'] * 2
-        if 'intelligence' in attributes_to_raise:
-            self.magicka += self.level_up_attribute_bonuses['intelligence'] * 2
-        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
-        self.encumbrance = self.attributes['strength'] * 5
+        self.calculateDerivedAttributes()
 
         # reset various things and finally increment level
         self.times_trained_this_level = 0
@@ -533,18 +566,7 @@ class Character:
         self.level_up_available = False
 
         # recalculate derived things
-        # encumbrance
-        self.encumbrance = self.attributes['strength'] * 5
-        # magicka
-        if self.gender == 'f':
-            self.magicka = all_races[self.race]['magicka'][1]
-        elif self.gender == 'm':
-            self.magicka = all_races[self.race]['magicka'][0]
-        self.magicka += self.attributes['intelligence'] * 2
-        if self.birthsign == 'apprentice':
-            self.magicka += 100
-        # endurance
-        self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
+        self.calculateDerivedAttributes()
         self.calculate_wasted_skill_ups()
 
         # record character state now that override has been completed
@@ -670,12 +692,13 @@ Times trained    {self.times_trained_this_level}/5''')
 
 LEVEL           {self.level:3}       STRENGTH        {self.attributes['strength']:3}
 CLASS{self.character_class.name:>14}       INTELLIGENCE    {self.attributes['intelligence']:3}
-                          WILLPOWER       {self.attributes['willpower']:3}
-HEALTH          {self.health:3}       AGILITY         {self.attributes['agility']:3}
-MAGICKA         {self.magicka:3}       SPEED           {self.attributes['speed']:3}
-FATIGUE         {self.fatigue:3}       ENDURANCE       {self.attributes['endurance']:3}
-ENCUMBRANCE     {self.encumbrance:3}       PERSONALITY     {self.attributes['personality']:3}
-                          LUCK            {self.attributes['luck']:3}
+SIGN{self.birthsign.title():>15}       WILLPOWER       {self.attributes['willpower']:3}
+                          AGILITY         {self.attributes['agility']:3}
+HEALTH          {self.health:3}       SPEED           {self.attributes['speed']:3}
+MAGICKA         {self.magicka:3}       ENDURANCE       {self.attributes['endurance']:3}
+FATIGUE         {self.fatigue:3}       PERSONALITY     {self.attributes['personality']:3}
+ENCUMBRANCE     {self.encumbrance:3}       LUCK            {self.attributes['luck']:3}
+
 ==================
    MAJOR SKILLS   
 ==================''')
@@ -766,13 +789,7 @@ Optimal 7x100 level can still be achieved but you must increase
             elif endurance_tracker == 100:
                 max_health += 10
         # calculate optimal magicka
-        max_magicka = 200
-        if self.gender == 'f':
-            max_magicka += all_races[self.race]['magicka'][1]
-        elif self.gender == 'm':
-            max_magicka += all_races[self.race]['magicka'][0]
-        if self.birthsign == 'apprentice':
-            max_magicka += 100
+        max_magicka = 200 + self.magicka_birthsign_bonus + self.magicka_racial_bonus
 
         # max fatigue and encumbrance are always the same
         max_fatigue = 400
@@ -814,6 +831,25 @@ def loadCharacter(savename='saved-character.pickle'):
         print('Saved character loaded as c')
     except:
         print('No saved character found')
+
+def rebuildCharacter(old_character):
+    try:
+        level = max(list(old_character.level_up_history))
+        new_character = Character(old_character.race,old_character.gender,old_character.character_class,old_character.birthsign)
+        new_character.override(old_character.level_up_history[level]['attributes'].copy(),old_character.skills.copy(),old_character.health,level)
+        new_character.level_up_history = old_character.level_up_history.copy()
+        new_character.times_trained_this_level = old_character.times_trained_this_level
+        new_character.skills = old_character.level_up_history[level]['skills'].copy()
+        for x in all_skills:
+            difference = old_character.skills[x] - new_character.skills[x]
+            if difference > 0:
+                if difference >= 10 and x in new_character.character_class.major_skills:
+                    raise RuntimeError('Invalid input character - character should have levelled up')
+                new_character.increase_skill(x,difference)
+
+    except:
+        print('Something went wrong')
+    return new_character
 
 default_classes = {
         'acrobat': CharacterClass('Acrobat','stealth',['agility','endurance'],['blade','block','acrobatics','marksman','security','sneak','speechcraft']),
