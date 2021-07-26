@@ -819,6 +819,61 @@ You did it, kid.''')
             else:
                 print(':( why did this have to happen?')
 
+    def skillLevels(self, specialisation=None):
+        if specialisation is not None and specialisation not in all_specialisations:
+            raise RuntimeError('Invalid specialisation')
+        # setup
+        # initialise mastery levels
+        mastery = {
+                'master': [],
+                'expert': [],
+                'journeyman': [],
+                'apprentice': [],
+                'novice': [],
+        }
+        # narrow down which skills we're checking
+        if specialisation:
+            skills_to_check = all_specialisations[specialisation]
+        else:
+            skills_to_check = all_skills
+        # check each skill's mastery level
+        for x in skills_to_check:
+            if 0 <= self.skills[x] <= 24:
+                mastery['novice'].append(x)
+            elif 25 <= self.skills[x] <= 49:
+                mastery['apprentice'].append(x)
+            elif 50 <= self.skills[x] <= 74:
+                mastery['journeyman'].append(x)
+            elif 75 <= self.skills[x] <= 99:
+                mastery['expert'].append(x)
+            elif self.skills[x] == 100:
+                mastery['master'].append(x)
+
+        # print
+        # handle spacing by tracking when we print for the first time
+        first = True
+        # define headings to use loop
+        headings = {
+                'master': '----- MASTER -----',
+                'expert': '----- EXPERT -----',
+                'journeyman': '--- JOURNEYMAN ---',
+                'apprentice': '--- APPRENTICE ---',
+                'novice': '----- NOVICE -----',
+        }
+        # here we go
+        print('''==================
+   SKILL LEVELS   
+==================''')
+        for level in list(mastery):
+            if mastery[level]:
+                if first:
+                    first = False
+                else:
+                    print()
+                print(headings[level])
+                for x in mastery[level]:
+                    print(f'{x:15}{self.skills[x]:3}')
+
 def saveCharacter(character,savename='saved-character.pickle'):
     with open(savename,'bw') as f:
         f.write(pickle.dumps(character))

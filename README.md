@@ -75,6 +75,9 @@ saveCharacter(c)
 # manually specify attributes to increase on level-up. useful when increasing luck
 c.levelUp(['strength','agility','luck'])
 
+# show magic skills by mastery level - leave blank for all skills
+c.skillLevels('magic')
+
 # show how we're doing in the overall scheme of minmaxing
 c.minmax()
 
