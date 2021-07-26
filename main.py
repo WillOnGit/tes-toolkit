@@ -704,13 +704,13 @@ ENCUMBRANCE     {self.encumbrance:3}       LUCK            {self.attributes['luc
 ==================''')
         for x in character_journal_skill_order:
             if x in self.character_class.major_skills:
-                print(f'{x:16}{self.skills[x]:3}')
+                print(f'{x:15}{self.skills[x]:3}')
         print('''==================
    MINOR SKILLS   
 ==================''')
         for x in character_journal_skill_order:
             if x not in self.character_class.major_skills:
-                print(f'{x:16}{self.skills[x]:3}')
+                print(f'{x:15}{self.skills[x]:3}')
 
     def minmax(self):
         # 1/3 - print skill-up margin of error
