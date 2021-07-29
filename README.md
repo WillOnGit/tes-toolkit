@@ -15,6 +15,7 @@ If you're just starting out check out the required reading section, which points
 - https://en.uesp.net/wiki/Oblivion:Leveling
 - https://en.uesp.net/wiki/Oblivion:Efficient_Leveling
 - https://en.uesp.net/wiki/Oblivion:Increasing_Skills
+- https://en.uesp.net/wiki/Oblivion:Endurance (especially the Health Gains section)
 
 ## Quickstart
 There's no proper documentation yet while the system is being finalised but this basically covers everything you need.
