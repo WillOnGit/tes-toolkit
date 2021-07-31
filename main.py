@@ -437,17 +437,16 @@ class Character:
         if trained and self.times_trained_this_level + magnitude > 5:
             raise RuntimeError('Aborting - this exceeds the training limit for this level')
 
+        # no obvious problems - proceed
+        # additional logic if increasing major skill
         if skill in self.character_class.major_skills:
+            # check for over-levelling
             level_up_result = self.level_up_progress + magnitude
             if level_up_result > 10:
                 raise RuntimeError('Aborting safely - this increase over-levels by {}'.format(level_up_result - 10))
             self.level_up_progress += magnitude
-            self.skills[skill] += magnitude
-            self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
-            if trained:
-                self.times_trained_this_level += magnitude
             if self.level_up_progress == 10:
-                # convert number of skill increase to attribute increase bonus
+                # convert number of skill increases to attribute bonuses
                 for x in all_attributes:
                     if self.level_up_attribute_bonuses[x] == 0:
                         self.level_up_attribute_bonuses[x] = 1
@@ -462,11 +461,13 @@ class Character:
                 self.level_up_available = True
                 print('Level up available')
 
-        else:
-            self.skills[skill] += magnitude
-            self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
-            if trained:
-                self.times_trained_this_level += magnitude
+        # do this for major and minor skill increases
+        self.skills[skill] += magnitude
+        print(f'{skill} increased to {self.skills[skill]}')
+        # TODO - refactor this into a stateless calculation
+        self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+        if trained:
+            self.times_trained_this_level += magnitude
 
     def calculate_wasted_skill_ups(self):
         # wasted skill ups
