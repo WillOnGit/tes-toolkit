@@ -429,24 +429,38 @@ class Character:
             friendly_gender = 'Male'
         return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
-    def increase_skill(self, skill, magnitude=1, trained=False):
+    def increase_skill(self, skill, magnitude=1, trained=False, quiet=False):
+        # shorthand
+        major = skill in self.character_class.major_skills
+        # check for pending level up
         if self.level_up_available:
             raise RuntimeError('Level up first')
+        # check for overshooting skill maximum
         if self.skills[skill] + magnitude > 100:
             raise RuntimeError('Aborting safely - can\'t skill up past 100')
+        # check for over-training
         if trained and self.times_trained_this_level + magnitude > 5:
             raise RuntimeError('Aborting - this exceeds the training limit for this level')
+        # check for over-levelling
+        if major and self.level_up_progress + magnitude > 10:
+            raise RuntimeError(f'Aborting safely - this increase over-levels by {self.level_up_progress + magnitude - 10}')
 
-        # no obvious problems - proceed
+        # here we go
+        # do this for major and minor skill increases
+        self.skills[skill] += magnitude
+        if not quiet:
+            print(f'{skill} increased to {self.skills[skill]}')
+        # TODO - refactor this into a stateless calculation
+        self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+        if trained:
+            self.times_trained_this_level += magnitude
+
         # additional logic if increasing major skill
-        if skill in self.character_class.major_skills:
-            # check for over-levelling
-            level_up_result = self.level_up_progress + magnitude
-            if level_up_result > 10:
-                raise RuntimeError('Aborting safely - this increase over-levels by {}'.format(level_up_result - 10))
+        if major:
             self.level_up_progress += magnitude
             if self.level_up_progress == 10:
                 # convert number of skill increases to attribute bonuses
+                # this needs to happen AFTER the attribute bonuses are updated
                 for x in all_attributes:
                     if self.level_up_attribute_bonuses[x] == 0:
                         self.level_up_attribute_bonuses[x] = 1
@@ -459,15 +473,8 @@ class Character:
                     else:
                         self.level_up_attribute_bonuses[x] = 5
                 self.level_up_available = True
-                print('Level up available')
-
-        # do this for major and minor skill increases
-        self.skills[skill] += magnitude
-        print(f'{skill} increased to {self.skills[skill]}')
-        # TODO - refactor this into a stateless calculation
-        self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
-        if trained:
-            self.times_trained_this_level += magnitude
+                if not quiet:
+                    print('Level up available')
 
     def calculate_wasted_skill_ups(self):
         # wasted skill ups
@@ -901,8 +908,7 @@ def rebuildCharacter(old_character):
             if difference > 0:
                 if difference >= 10 and x in new_character.character_class.major_skills:
                     raise RuntimeError('Invalid input character - character should have levelled up')
-                new_character.increase_skill(x,difference)
-
+                new_character.increase_skill(x,difference,quiet=True)
     except:
         print('Something went wrong')
     return new_character
