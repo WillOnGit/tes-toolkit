@@ -1,4 +1,4 @@
-import pickle
+import json
 
 all_races = {
     'altmer': {
@@ -882,36 +882,82 @@ You did it, kid.''')
                 for x in mastery[level]:
                     print(f'{x:15}{self.skills[x]:3}')
 
-def saveCharacter(character,savename='saved-character.pickle'):
-    with open(savename,'bw') as f:
-        f.write(pickle.dumps(character))
+def saveCharacter(character,savename='saved-character.json'):
+    # check
+    if type(character) != Character:
+        raise RuntimeError('Invalid character')
 
-def loadCharacter(savename='saved-character.pickle'):
-    global c
-    try:
-        with open(savename,'br') as f:
-            c = pickle.loads(f.read())
-        print('Saved character loaded as c')
-    except:
-        print('No saved character found')
+    # take just what we need to recreate a character
+    core_data = {
+            'race': character.race,
+            'gender': character.gender,
+            'birthsign': character.birthsign,
+            'health': character.health,
+            'times trained': character.times_trained_this_level,
+            'skills': character.skills,
+            'character class': {
+                'name': character.character_class.name,
+                'specialisation': character.character_class.specialisation,
+                'favoured_attributes': character.character_class.favoured_attributes,
+                'major_skills': character.character_class.major_skills,
+                },
+            'level up history': character.level_up_history,
+            }
 
-def rebuildCharacter(old_character):
+    # write to file, pretty-printed
+    with open(savename,'w') as f:
+        f.write(json.dumps(core_data,indent=4))
+
+
+def loadCharacter(savename='saved-character.json'):
     try:
-        level = max(list(old_character.level_up_history))
-        new_character = Character(old_character.race,old_character.gender,old_character.character_class,old_character.birthsign)
-        new_character.override(old_character.level_up_history[level]['attributes'].copy(),old_character.skills.copy(),old_character.health,level)
-        new_character.level_up_history = old_character.level_up_history.copy()
-        new_character.times_trained_this_level = old_character.times_trained_this_level
-        new_character.skills = old_character.level_up_history[level]['skills'].copy()
+        # load saved data
+        with open(savename,'r') as f:
+            core_data = json.loads(f.read())
+
+        # JSON doesn't support integers as names so we recreate the history dict
+        core_data['restored history'] = {
+                int(x): core_data['level up history'][x] for x in list(core_data['level up history'])
+                }
+
+        # check if saved class is a default
+        character_class = None
+        for x in default_classes:
+            if all([
+                core_data['character class']['name'] == default_classes[x].name,
+                core_data['character class']['specialisation'] == default_classes[x].specialisation,
+                core_data['character class']['favoured_attributes'] == default_classes[x].favoured_attributes,
+                core_data['character class']['major_skills'] == default_classes[x].major_skills,
+                ]):
+                # we've found a match
+                character_class = default_classes[x]
+                break
+        if character_class == None:
+            # class isn't a default, so create it
+            character_class = CharacterClass(
+                    core_data['character class']['name'],
+                    core_data['character class']['specialisation'],
+                    core_data['character class']['favoured_attributes'],
+                    core_data['character class']['major_skills']
+                    )
+
+        # class is ready so build character
+        # we DO NOT validate the saved data, just try
+        level = max(list(core_data['restored history']))
+        character = Character(core_data['race'],core_data['gender'],character_class,core_data['birthsign'])
+        character.override(core_data['restored history'][level]['attributes'].copy(),core_data['restored history'][level]['skills'].copy(),core_data['health'],level)
+        character.level_up_history = core_data['restored history'].copy()
+        character.times_trained_this_level = core_data['times trained']
         for x in all_skills:
-            difference = old_character.skills[x] - new_character.skills[x]
+            difference = core_data['skills'][x] - character.skills[x]
             if difference > 0:
-                if difference >= 10 and x in new_character.character_class.major_skills:
-                    raise RuntimeError('Invalid input character - character should have levelled up')
-                new_character.increase_skill(x,difference,quiet=True)
+                character.increase_skill(x,difference,quiet=True)
+        print('Saved character loaded successfully')
+        return character
+    except FileNotFoundError:
+        print('Save not found')
     except:
-        print('Something went wrong')
-    return new_character
+        print('Invalid save')
 
 default_classes = {
         'acrobat': CharacterClass('Acrobat','stealth',['agility','endurance'],['blade','block','acrobatics','marksman','security','sneak','speechcraft']),
@@ -937,4 +983,5 @@ default_classes = {
         'witchhunter': CharacterClass('Witchhunter','magic',['agility','intelligence'],['athletics','alchemy','conjuration','destruction','mysticism','marksman','security']),
         }
 
-loadCharacter()
+if __name__ == '__main__':
+    c = loadCharacter()
