@@ -48,20 +48,20 @@ c.journal()
 c.progressToLevelUp()
 
 # increase a skill when it happens in-game
-c.increase_skill('heavy armor')
+c.increaseSkill('heavy armor')
 
 # increase a single skill by more than one - useful when catching up or at low levels with rapid increases
-c.increase_skill('armorer',9)
+c.increaseSkill('armorer',9)
 c.progressToLevelUp()
 
 # track training sessions
-c.increase_skill('alchemy',3,True)
+c.increaseSkill('alchemy',3,True)
 c.progressToLevelUp()
 
 # level up - increase tenth major skill and call levelUp
 # endurance, intelligence and luck will be automatically detected as the best attributes to raise
 # confirm interactively and you're level 2
-c.increase_skill('conjuration',7)
+c.increaseSkill('conjuration',7)
 c.levelUp()
 yes
 c.journal()

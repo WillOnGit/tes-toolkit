@@ -429,7 +429,7 @@ class Character:
             friendly_gender = 'Male'
         return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
-    def increase_skill(self, skill, magnitude=1, trained=False, quiet=False):
+    def increaseSkill(self, skill, magnitude=1, trained=False, quiet=False):
         # shorthand
         major = skill in self.character_class.major_skills
         # check for pending level up
@@ -476,7 +476,7 @@ class Character:
                 if not quiet:
                     print('Level up available')
 
-    def calculate_wasted_skill_ups(self):
+    def calculateWastedSkillUps(self):
         # wasted skill ups
         self.wasted_skill_ups = {x:0 for x in all_attributes}
         for x in all_skills:
@@ -549,7 +549,7 @@ class Character:
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
         self.level_up_available = False
         self.level += 1
-        self.calculate_wasted_skill_ups()
+        self.calculateWastedSkillUps()
 
         # record character state now that level up has been completed
         self.level_up_history[self.level] = {
@@ -575,7 +575,7 @@ class Character:
 
         # recalculate derived things
         self.calculateDerivedAttributes()
-        self.calculate_wasted_skill_ups()
+        self.calculateWastedSkillUps()
 
         # record character state now that override has been completed
         self.level_up_history[self.level] = {
@@ -662,7 +662,7 @@ class Character:
         self.attributes = self.level_up_history[self.level]['attributes'].copy()
 
         # recalculate wasted skill ups
-        self.calculate_wasted_skill_ups()
+        self.calculateWastedSkillUps()
 
         # reset level stuff
         self.times_trained_this_level = 0
@@ -932,7 +932,7 @@ def loadCharacter(savename='saved-character.json'):
                 # we've found a match
                 character_class = default_classes[x]
                 break
-        if character_class == None:
+        if character_class is None:
             # class isn't a default, so create it
             character_class = CharacterClass(
                     core_data['character class']['name'],
@@ -951,7 +951,7 @@ def loadCharacter(savename='saved-character.json'):
         for x in all_skills:
             difference = core_data['skills'][x] - character.skills[x]
             if difference > 0:
-                character.increase_skill(x,difference,quiet=True)
+                character.increaseSkill(x,difference,quiet=True)
         print('Saved character loaded successfully')
         return character
     except FileNotFoundError:
