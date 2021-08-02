@@ -22,7 +22,7 @@ There's no proper documentation yet while the system is being finalised but this
 
 Designed to be used from an interactive python session:
 ```
-python3 -i main.py
+python3 -i oblivion.py
 ```
 Existing data will automatically be loaded if found.
 
