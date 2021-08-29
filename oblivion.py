@@ -405,7 +405,7 @@ class Character:
         self.required_attribute_ups = {x:(100 - self.attributes[x])//5 for x in all_attributes[:-1]}
         self.required_attribute_ups['luck'] = (100 - self.attributes['luck'])
         self.spare_skill_ups = {x:self.available_skill_ups[x] - 10*self.required_attribute_ups[x] for x in all_attributes[:-1]}
-        self.spare_skill_ups['luck'] =  self.level_skill_cap - self.required_attribute_ups['luck'] - 1
+        self.spare_skill_ups['luck'] = max(self.level_skill_cap - self.required_attribute_ups['luck'] - 1, 0)
         self.wasted_skill_ups = {x:0 for x in all_attributes}
 
         # calculate everything else
@@ -730,7 +730,11 @@ ENCUMBRANCE     {self.encumbrance:3}       LUCK            {self.attributes['luc
  SKILL UP MARGINS 
 ==================''')
             for x in under_100_attributes:
-                progress = round(50 * (self.wasted_skill_ups[x]/self.spare_skill_ups[x]))
+                try:
+                    progress = round(50 * (self.wasted_skill_ups[x]/self.spare_skill_ups[x]))
+                except ZeroDivisionError:
+                    # no spare room at all, so set bar to full
+                    progress = 50
                 if progress == 0 and self.wasted_skill_ups[x] > 0:
                     progress = 1
                 print(f'''{x.upper()}
