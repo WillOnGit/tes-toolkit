@@ -806,12 +806,19 @@ Optimal 7x100 level can still be achieved but you must increase
         print(f'''
 ==================
  IDEAL STATISTICS 
-==================
-Level       = {self.level_skill_cap:3}
-Health      = {max_health:3}
-Magicka     = {max_magicka:3}
-Fatigue     = {max_fatigue:3}
-Encumbrance = {max_encumbrance:3}''')
+==================''')
+        for x in [
+        ('LEVEL',self.level,self.level_skill_cap),
+        ('HEALTH',self.health,max_health),
+        ('MAGICKA',self.magicka,max_magicka),
+        ('FATIGUE',self.fatigue,max_fatigue),
+        ('ENCUMBRANCE',self.encumbrance,max_encumbrance),
+        ]:
+            progress = round(50 * (x[1]/x[2]))
+            if progress == 0 and x[1] > 0:
+                progress = 1
+            print(f'''{x[0]}
+{x[1]:3} {"#"*progress}{"."*(50-progress)} {x[2]:3}''')
 
         # if no attributes being levelled, we should be done:
         # check that things add up
