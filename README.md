@@ -98,9 +98,9 @@ saveCharacter(c,'other filename')
 loadCharacter('savename')
 # last resort in case we didn't save anything here - undoes all progress this level
 c.resetToLastLevel()
+```
 
 ### Reference documentation
 Full documentation for each class, method etc. is available as docstrings.
 Examine the code or browse them interactively for details on each item.
 In particular, the module-level documentation has overviews of what's available.
-```
