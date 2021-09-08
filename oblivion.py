@@ -1,5 +1,23 @@
+"""
+Journal efficient character levelling in TES4: Oblivion.
+
+Exports the following:
+    - class CharacterClass for classes in the game sense
+    - class Character for player characters (PCs)
+    - function saveCharacter to save PCs as json files
+    - function loadCharacter to load PCs from json files
+"""
+
+
 import json
 
+
+# Static race data dictionary. Each race is a key, containing a
+# dictionary of initial attributes, any magicka bonuses and a list of
+# (skill, bonus) tuples.
+#
+# Initial attributes and magicka bonuses are given as (male, female)
+# tuples.
 all_races = {
     'altmer': {
         'strength': (30, 30),
@@ -195,6 +213,7 @@ all_races = {
     },
     }
 
+# Static list of attributes as strings.
 all_attributes = [
     'strength',
     'intelligence',
@@ -206,6 +225,7 @@ all_attributes = [
     'luck',
     ]
 
+# Static list of skills as strings.
 all_skills = [
     'acrobatics',
     'alchemy',
@@ -230,6 +250,7 @@ all_skills = [
     'speechcraft',
     ]
 
+# Static list of birthsigns as strings.
 all_birthsigns = [
     'apprentice',
     'atronach',
@@ -246,6 +267,7 @@ all_birthsigns = [
     'warrior',
     ]
 
+# Dictionary mapping skills (as keys) to their governing attributes.
 skill_attribute_mappings = {
     'acrobatics': 'speed',
     'alchemy': 'intelligence',
@@ -270,6 +292,9 @@ skill_attribute_mappings = {
     'speechcraft': 'personality',
     }
 
+# Dictionary of specialisations (as keys) mapping each to a list of
+# skills in the specialisation. It's more useful this way as opposed to
+# mapping skills to a specialisation.
 all_specialisations = {
         'combat': [
             'armorer',
@@ -300,22 +325,53 @@ all_specialisations = {
             ]
         }
 
+# Construct the order in which skills are displayed in the journal. This
+# could be generated once and saved as is but it's more legible this
+# way.
 character_journal_skill_order = []
 for x in all_specialisations:
     for y in all_specialisations[x]:
         character_journal_skill_order.append(y)
 
+
 class CharacterClass:
+    """
+    Represents classes in the game sense.
+
+    Allows sharing classes between PCs and prebuilding of default
+    classes. Once built, a class only ever needs passing to the
+    Character constructor.
+    """
+
     def __init__(self, name, specialisation, favoured_attributes, major_skills):
+        """
+        Constructor requiring 4 mandatory parameters.
+
+        kwargs (in positional order):
+        - name, display name for class (string)
+        - specialisation, one of 'combat', 'magic', 'stealth'
+        - favoured_attributes, see all_attributes for allowed values
+            (list of length 2)
+        - major_skills, see all_skills for allowed values (list of
+            length 7)
+
+        All parameters are validated - on any errors the constructor
+        aborts by raising a RuntimeError.
+        """
+        # set name
         self.name = name
+
+        # validate and set specialisation
         if specialisation not in ['combat','magic','stealth']:
             raise RuntimeError('Invalid specialisation')
         self.specialisation = specialisation
 
+        # validate and set favoured attributes
         if len(favoured_attributes) != 2 or not all([x in all_attributes for x in favoured_attributes]):
             raise RuntimeError('Invalid favoured attributes')
         self.favoured_attributes = favoured_attributes
 
+        # validate and set major skills
         if len(major_skills) != 7 or not all([x in all_skills for x in major_skills]):
             raise RuntimeError('Invalid major skills')
         self.major_skills = major_skills
@@ -326,17 +382,51 @@ Specialisation = {}
 Favoured attributes = {}
 Major skills = {}'''.format(self.name,self.specialisation,self.favoured_attributes,self.major_skills)
 
+
 class Character:
+    """
+    The main class for player characters.
+
+    Most functionality is provided as methods with the exception of a
+    few helper functions. The public methods should be the only way to
+    interact with the class.
+
+    Public methods:
+    - increaseSkill
+    - levelUp
+    - override
+    - validate
+    - resetToLastLevel
+    - progressToLevelUp
+    - journal
+    - minmax
+    - skillLevels
+    """
+
     def __init__(self,race,gender,character_class,birthsign):
+        """
+        Constructor requiring 4 mandatory parameters.
+
+        kwargs (in positional order):
+        - race, see all_races for allowed values (string)
+        - gender, one of 'f' or 'm'
+        - character_class (CharacterClass)
+        - birthsign (string)
+
+        All parameters are validated - on any errors the constructor
+        aborts by raising a RuntimeError.
+
+        Characters are always created as level 1 characters. To create a
+        higher-level character, call the override method after creating
+        the level 1 version of that character.
+        """
         # validate and set race, gender, class
         if race not in all_races:
             raise RuntimeError('Invalid race - in the narrow context of TES4: Oblivion anyway :)')
         self.race = race
-
         if gender not in ['f','m']:
             raise RuntimeError('Invalid gender - in the narrow context of TES4: Oblivion anyway :)')
         self.gender = gender
-
         if type(character_class) != CharacterClass:
             raise RuntimeError('Invalid class')
         self.character_class = character_class
@@ -430,6 +520,24 @@ class Character:
         return '{} {}, class {}'.format(friendly_gender,self.race.title(),self.character_class.name)
 
     def increaseSkill(self, skill, magnitude=1, trained=False, quiet=False):
+        """
+        Public method - increase a skill by a variable amount.
+
+        kwargs (in positional order):
+        - skill, see all_skills for allowed values (string)
+        - magnitude (int)
+        - trained (boolean)
+        - quiet (boolean)
+
+        By default, the given skill will be increased by 1. Specify a
+        different magnitude to increase multiple levels in one go.
+
+        Specify trained=True if the skill increase comes from a
+        skill trainer.
+
+        Specify quiet=True to suppress printing the resulting skill
+        level.
+        """
         # shorthand
         major = skill in self.character_class.major_skills
         # check for pending level up
@@ -477,6 +585,13 @@ class Character:
                     print('Level up available')
 
     def calculateWastedSkillUps(self):
+        """
+        Private method.
+
+        Recalculates the amount of skill increases which have not
+        contributed to a +5 attribute increase on a level up. The
+        result is stored in the self.wasted_skill_ups dictionary.
+        """
         # wasted skill ups
         self.wasted_skill_ups = {x:0 for x in all_attributes}
         for x in all_skills:
@@ -488,12 +603,31 @@ class Character:
         self.wasted_skill_ups['luck'] = (self.level - 1) - (self.attributes['luck'] - self.level_up_history[1]['attributes']['luck'])
 
     def calculateDerivedAttributes(self):
+        """
+        Private method.
+
+        Calculates the three derived attributes magicka, fatigue and
+        encumbrance. Health is handled separately due to its reliance on
+        state.
+        """
         # we can't handle health here as it relies on state
         self.magicka = self.attributes['intelligence'] * 2 + self.magicka_birthsign_bonus + self.magicka_racial_bonus
         self.fatigue = self.attributes['strength'] + self.attributes['willpower'] + self.attributes['agility'] + self.attributes['endurance']
         self.encumbrance = self.attributes['strength'] * 5
 
     def levelUp(self,attributes_to_raise='auto'):
+        """
+        Public method - level up character when available.
+
+        Available only when ten major skills have been increased. Can
+        generally be called with no arguments, as the autodetection of
+        the best attributes to raise should work fine.
+
+        The level up can be aborted if the autodetected attributes
+        aren't wanted - in such a case a single argument of a list of
+        attributes to increase should be supplied. See all_attributes
+        for allowed values.
+        """
         # checks
         if not self.level_up_available:
             raise RuntimeError('Level up not available - aborting')
@@ -559,6 +693,29 @@ class Character:
             }
 
     def override(self,attributes,skills,health,level):
+        """
+        Public method - set new PC attributes, level, ...
+
+        kwargs (in positional order):
+        - attributes, see self.attributes for format (dictionary)
+        - skills, see self.skills for format (dictionary)
+        - health (int)
+        - level (int)
+
+        Override the attributes, skills, health and level of a character
+        to whatever the user supplies. All arguments are mandatory.
+
+        So that knowledge of the implementation/private API is not
+        needed, this method resets level progress to zero. Therefore
+        this should only be used with the stats of a character which has
+        just levelled up. Not doing so will likely result in invalid
+        (i.e. impossible to attain in-game for various reasons) or
+        corrupt (i.e. broken at the Python level) characters - use with
+        care.
+
+        You may want to call the validate method after using this.
+        """
+        # TODO - make bare-minimum validations of input types
         # assign blindly, check it's ok later
         self.attributes = attributes
         self.skills = skills
@@ -585,6 +742,9 @@ class Character:
             }
 
     def validate(self):
+        """
+        Public method - validate PC has levelled efficiently.
+        """
         if self.level_up_progress != 0:
             print('This currently only applies to level up milestones')
             return -1
@@ -657,6 +817,11 @@ class Character:
             return 0
 
     def resetToLastLevel(self):
+        """
+        Public method - reset character to last level up.
+
+        WARNING: unsaved progress this level will be lost.
+        """
         # reset skills and attributes
         self.skills = self.level_up_history[self.level]['skills'].copy()
         self.attributes = self.level_up_history[self.level]['attributes'].copy()
@@ -671,6 +836,13 @@ class Character:
         self.level_up_available = False
 
     def progressToLevelUp(self):
+        """
+        Public method - display level up progress.
+
+        Displays how many skills governed by each non-100 attribute have
+        been increased, how many major skills have been increased and
+        how many times trainers have been used since last level up.
+        """
         if self.level_up_available:
             print('Go level up!')
             return 1
@@ -683,8 +855,10 @@ majors          {self.level_up_progress:2}/10
         print(f'''------------------
 Times trained    {self.times_trained_this_level}/5''')
 
-
     def journal(self):
+        """
+        Public method - display PC information from the in-game journal.
+        """
         # print everything
         print(f'''  ____ _                          _            
  / ___| |__   __ _ _ __ __ _  ___| |_ ___ _ __ 
@@ -721,6 +895,19 @@ ENCUMBRANCE     {self.encumbrance:3}       LUCK            {self.attributes['luc
                 print(f'{x:15}{self.skills[x]:3}')
 
     def minmax(self):
+        """
+        Public method - display long-term minmaxing information.
+
+        The full range of information displayed is:
+        - for each attribute, how many skill increases have been wasted
+        out of the maximum allowable while still able to max that
+        attribute
+        - whether specific attributes need to be increased on the next
+        level up to reach 100 in all non-luck attributes as quickly as
+        possible
+        - how close our current statistics are to their theoretical
+        maximum
+        """
         # 1/3 - print skill-up margin of error
         # check which attributes are still being levelled
         under_100_attributes = [x for x in all_attributes if self.attributes[x] < 100]
@@ -839,6 +1026,15 @@ You did it, kid.''')
                 print(':( why did this have to happen?')
 
     def skillLevels(self, specialisation=None):
+        """
+        Public method - display skills by current mastery level.
+
+        kwargs (in positional order):
+        - specialisation, one of 'combat', 'magic', 'stealth'
+
+        With no arguments, displays all skills. With a specialisation
+        given, only displays skills of that specialisation.
+        """
         if specialisation is not None and specialisation not in all_specialisations:
             raise RuntimeError('Invalid specialisation')
         # setup
@@ -893,7 +1089,16 @@ You did it, kid.''')
                 for x in mastery[level]:
                     print(f'{x:15}{self.skills[x]:3}')
 
+
 def saveCharacter(character,savename='saved-character.json'):
+    """
+    Public helper function - save a character as a JSON file
+
+    kwargs (in positional order):
+    character -- Character to save
+    savename -- filename to save in current directory, string -- default
+        'saved-character.json'
+    """
     # check
     if type(character) != Character:
         raise RuntimeError('Invalid character')
@@ -921,6 +1126,13 @@ def saveCharacter(character,savename='saved-character.json'):
 
 
 def loadCharacter(savename='saved-character.json'):
+    """
+    Public helper function - load a character from a JSON file
+
+    kwargs (in positional order):
+    savename -- filename to load in current directory --
+      default 'saved-character.json'
+    """
     try:
         # load saved data
         with open(savename,'r') as f:
@@ -970,6 +1182,7 @@ def loadCharacter(savename='saved-character.json'):
     except:
         print('Invalid save')
 
+# dictionary of the default classes
 default_classes = {
         'acrobat': CharacterClass('Acrobat','stealth',['agility','endurance'],['blade','block','acrobatics','marksman','security','sneak','speechcraft']),
         'agent': CharacterClass('Agent','stealth',['agility','personality'],['illusion','acrobatics','marksman','mercantile','security','sneak','speechcraft']),
