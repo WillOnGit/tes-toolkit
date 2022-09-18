@@ -401,6 +401,7 @@ class Character:
     - journal
     - minmax
     - skillLevels
+    - freeSkills
     """
 
     def __init__(self,race,gender,character_class,birthsign):
@@ -1088,6 +1089,37 @@ You did it, kid.''')
                 print(headings[level])
                 for x in mastery[level]:
                     print(f'{x:15}{self.skills[x]:3}')
+
+
+    def freeSkills(self):
+        """
+        Public method - display skills which can be freely trained.
+
+        Quickly displays which skills can be freely trained as they are
+        no longer required for attribute bonuses. Note that major skills
+        of course still count towards the next level up.
+        """
+        # prep
+        maxed_attributes = [x for x in all_attributes if self.attributes[x] == 100]
+        free_majors = [x for x in self.character_class.major_skills if skill_attribute_mappings[x] in maxed_attributes and c.skills[x] != 100]
+        free_minors = [x for x in all_skills if skill_attribute_mappings[x] in maxed_attributes and x not in self.character_class.major_skills and c.skills[x] != 100]
+
+        # here we go
+        if free_majors:
+            print('''=================
+   FREE MAJORS   
+=================''')
+            for x in free_majors:
+                print(f'{x:15}{self.skills[x]:3}')
+
+        if free_minors:
+            if free_majors:
+                print()
+            print('''=================
+   FREE MINORS   
+=================''')
+            for x in free_minors:
+                print(f'{x:15}{self.skills[x]:3}')
 
 
 def saveCharacter(character,savename='saved-character.json'):
