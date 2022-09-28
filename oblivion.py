@@ -499,7 +499,7 @@ class Character:
         self.spare_skill_ups['luck'] = max(self.level_skill_cap - self.required_attribute_ups['luck'] - 1, 0)
         self.wasted_skill_ups = {x:0 for x in all_attributes}
 
-        # calculate everything else
+        # initialise everything else
         self.level = 1
         self.level_up_history = {
                 1: {
@@ -511,7 +511,6 @@ class Character:
         self.times_trained_this_level = 0
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
-        self.level_up_available = False
 
     def __str__(self):
         if self.gender == 'f':
@@ -539,50 +538,67 @@ class Character:
         Specify quiet=True to suppress printing the resulting skill
         level.
         """
-        # shorthand
-        major = skill in self.character_class.major_skills
-        # check for pending level up
-        if self.level_up_available:
-            raise RuntimeError('Level up first')
         # check for overshooting skill maximum
         if self.skills[skill] + magnitude > 100:
             raise RuntimeError('Aborting safely - can\'t skill up past 100')
         # check for over-training
         if trained and self.times_trained_this_level + magnitude > 5:
             raise RuntimeError('Aborting - this exceeds the training limit for this level')
-        # check for over-levelling
-        if major and self.level_up_progress + magnitude > 10:
-            raise RuntimeError(f'Aborting safely - this increase over-levels by {self.level_up_progress + magnitude - 10}')
+        # shorthand
+        major = skill in self.character_class.major_skills
 
         # here we go
-        # do this for major and minor skill increases
-        self.skills[skill] += magnitude
-        if not quiet:
-            print(f'{skill} increased to {self.skills[skill]}')
-        # TODO - refactor this into a stateless calculation
-        self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+        # universal
         if trained:
             self.times_trained_this_level += magnitude
+        # minor skills are easy
+        if not major:
+            self.skills[skill] += magnitude
+            self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+            if not quiet:
+                print(f'{skill} increased to {self.skills[skill]}')
 
         # additional logic if increasing major skill
         if major:
-            self.level_up_progress += magnitude
-            if self.level_up_progress == 10:
-                # convert number of skill increases to attribute bonuses
-                # this needs to happen AFTER the attribute bonuses are updated
-                for x in all_attributes:
-                    if self.level_up_attribute_bonuses[x] == 0:
-                        self.level_up_attribute_bonuses[x] = 1
-                    elif 1 <= self.level_up_attribute_bonuses[x] <= 4:
-                        self.level_up_attribute_bonuses[x] = 2
-                    elif 5 <= self.level_up_attribute_bonuses[x] <= 7:
-                        self.level_up_attribute_bonuses[x] = 3
-                    elif 8 <= self.level_up_attribute_bonuses[x] <= 9:
-                        self.level_up_attribute_bonuses[x] = 4
-                    else:
-                        self.level_up_attribute_bonuses[x] = 5
-                self.level_up_available = True
-                if not quiet:
+            if self.level_up_progress + magnitude < 10:
+                # no level up earned so almost identical to minor skills
+                self.skills[skill] += magnitude
+                self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
+                self.level_up_progress += magnitude
+
+            else:
+                # prep
+                # check how many level ups we'll have
+                level_ups = (self.level_up_progress + magnitude) // 10
+                rounding_increase = 10 - self.level_up_progress
+                skill_increases_remaining = magnitude
+
+                # here we go
+                # 1/3 increase skill to exactly the next level boundary
+                self.skills[skill] += rounding_increase
+                skill_increases_remaining -= rounding_increase
+                self.level_up_history[max(list(self.level_up_history))+1] = {
+                    'skills': self.skills.copy(),
+                    }
+
+                # 2/3 if more than ten increases still to go (unlikely), increase in increments of 10
+                for x in range(level_ups-1):
+                    self.skills[skill] += 10
+                    skill_increases_remaining -= 10
+                    self.level_up_history[max(list(self.level_up_history))+1] = {
+                        'skills': self.skills.copy(),
+                        }
+
+                # 3/3 make any final increases and reset various variables
+                self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
+                self.skills[skill] += skill_increases_remaining
+                self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += skill_increases_remaining
+                self.level_up_progress = skill_increases_remaining
+                level_up_available = True
+
+            if not quiet:
+                print(f'{skill} increased to {self.skills[skill]}')
+                if level_up_available:
                     print('Level up available')
 
     def calculateWastedSkillUps(self):
@@ -630,11 +646,30 @@ class Character:
         for allowed values.
         """
         # checks
-        if not self.level_up_available:
+        if max(list(self.level_up_history)) == self.level:
             raise RuntimeError('Level up not available - aborting')
         under_100_attributes = [x for x in all_attributes if self.attributes[x] < 100]
         if not under_100_attributes:
-            raise RuntimeError('All attributes are 100 - aborting')
+            raise RuntimeError('No attributes under 100 - aborting')
+
+        # figure out modifiers based on level up history
+        attribute_modifiers = {x:0 for x in all_attributes}
+        # populate with skill increases first...
+        for skill in all_skills:
+            attribute_modifiers[skill_attribute_mappings[skill]] += self.level_up_history[self.level+1]['skills'][skill] - self.level_up_history[self.level]['skills'][skill]
+
+        # ...then convert to modifiers
+        for x in all_attributes:
+            if attribute_modifiers[x] == 0:
+                attribute_modifiers[x] = 1
+            elif 1 <= attribute_modifiers[x] <= 4:
+                attribute_modifiers[x] = 2
+            elif 5 <= attribute_modifiers[x] <= 7:
+                attribute_modifiers[x] = 3
+            elif 8 <= attribute_modifiers[x] <= 9:
+                attribute_modifiers[x] = 4
+            else:
+                attribute_modifiers[x] = 5
 
         # attributes are available to increase: check how many
         number_of_attributes_to_raise = min(3,len(under_100_attributes))
@@ -647,7 +682,7 @@ class Character:
             else:
                 candidates = []
                 for x in under_100_attributes:
-                    if self.level_up_attribute_bonuses[x] == 5:
+                    if attribute_modifiers[x] == 5:
                         candidates.append(x)
                 if len(candidates) == 2:
                     attributes_to_raise = candidates + ['luck']
@@ -668,30 +703,24 @@ class Character:
 
         # everything is ok - start level up by increasing attributes
         for x in attributes_to_raise:
-            self.attributes[x] += self.level_up_attribute_bonuses[x]
+            self.attributes[x] += attribute_modifiers[x]
             if self.attributes[x] > 100:
                 self.attributes[x] = 100
 
         # recalculate derived attributes
         self.health += self.attributes['endurance'] // 10
         if 'endurance' in attributes_to_raise:
-            self.health += self.level_up_attribute_bonuses['endurance'] * 2
+            self.health += attribute_modifiers['endurance'] * 2
         self.calculateDerivedAttributes()
 
         # reset various things and finally increment level
         self.times_trained_this_level = 0
-        self.level_up_progress = 0
-        self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
-        self.level_up_available = False
         self.level += 1
         self.calculateWastedSkillUps()
 
         # record character state now that level up has been completed
-        self.level_up_history[self.level] = {
-            'health': self.health,
-            'skills': self.skills.copy(),
-            'attributes': self.attributes.copy(),
-            }
+        self.level_up_history[self.level]['health'] = self.health
+        self.level_up_history[self.level]['attributes'] = self.attributes.copy()
 
     def override(self,attributes,skills,health,level):
         """
@@ -729,7 +758,6 @@ class Character:
                 }
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
-        self.level_up_available = False
 
         # recalculate derived things
         self.calculateDerivedAttributes()
@@ -834,7 +862,6 @@ class Character:
         self.times_trained_this_level = 0
         self.level_up_progress = 0
         self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
-        self.level_up_available = False
 
     def progressToLevelUp(self):
         """
@@ -844,10 +871,7 @@ class Character:
         been increased, how many major skills have been increased and
         how many times trainers have been used since last level up.
         """
-        if self.level_up_available:
-            print('Go level up!')
-            return 1
-        print(f'''Working towards level {self.level + 1}
+        print(f'''Working towards level {max(list(self.level_up_history)) + 1}
 majors          {self.level_up_progress:2}/10
 ------------------''')
         under_100_attributes = [x for x in all_attributes[:-1] if self.attributes[x] < 100]
