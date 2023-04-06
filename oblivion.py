@@ -783,11 +783,11 @@ class Character:
         # basic attributes and skills checks
         for x in self.attributes:
             if not 1 <= self.attributes[x] <= 100:
-                print('Attributes out of bounds')
+                print('Attributes out of bounds - multiple Oghma Infinium bonuses not checked')
                 warnings = True
         for x in self.skills:
             if not 1 <= self.skills[x] <= 100:
-                print('Skills out of bounds')
+                print('Skills out of bounds - multiple Oghma Infinium bonuses not checked')
                 warnings = True
 
         # check impossible level
@@ -1086,7 +1086,7 @@ You did it, kid.''')
                 mastery['journeyman'].append(x)
             elif 75 <= self.skills[x] <= 99:
                 mastery['expert'].append(x)
-            elif self.skills[x] == 100:
+            elif self.skills[x] >= 100:
                 mastery['master'].append(x)
 
         # print
@@ -1123,9 +1123,9 @@ You did it, kid.''')
         of course still count towards the next level up.
         """
         # prep
-        maxed_attributes = [x for x in all_attributes if self.attributes[x] == 100]
-        free_majors = [x for x in self.character_class.major_skills if skill_attribute_mappings[x] in maxed_attributes and c.skills[x] != 100]
-        free_minors = [x for x in all_skills if skill_attribute_mappings[x] in maxed_attributes and x not in self.character_class.major_skills and c.skills[x] != 100]
+        maxed_attributes = [x for x in all_attributes if self.attributes[x] >= 100]
+        free_majors = [x for x in self.character_class.major_skills if skill_attribute_mappings[x] in maxed_attributes and c.skills[x] < 100]
+        free_minors = [x for x in all_skills if skill_attribute_mappings[x] in maxed_attributes and x not in self.character_class.major_skills and c.skills[x] < 100]
 
         # here we go
         if free_majors:
