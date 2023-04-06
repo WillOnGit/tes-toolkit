@@ -1114,7 +1114,6 @@ You did it, kid.''')
                 for x in mastery[level]:
                     print(f'{x:15}{self.skills[x]:3}')
 
-
     def freeSkills(self):
         """
         Public method - display skills which can be freely trained.
@@ -1144,6 +1143,114 @@ You did it, kid.''')
 =================''')
             for x in free_minors:
                 print(f'{x:15}{self.skills[x]:3}')
+
+    def oghmaInfinium(self,path=None):
+        """
+        Public method - apply Oghma Infinium bonus.
+
+        kwargs (in positional order):
+        - path, one of 'steel', 'shadow', 'spirit'
+
+        With no arguments, prompts for a path interactively. With a
+        path given, apply that path after confirmation.
+
+        Note that we don't enforce only applying this bonus once.
+
+        WARNING: The levelling up logic when one or more major skills
+        are increased has been implemented based on the ambiguous UESP
+        description. It hasn't been tested in-game so please check
+        carefully.
+        """
+
+        if path is None:
+            # prompt for path then continue below
+            print(f"""Choose a path from 'steel', 'shadow' or 'spirit'
+
+        STEEL        |        SHADOW       |        SPIRIT        
+---------------------|---------------------|----------------------
+Strength    +10 = {self.attributes['strength']+10:3}|Agility     +10 = {self.attributes['agility']+10:3}|Intelligence +10 = {self.attributes['intelligence']+10:3}
+Speed       +10 = {self.attributes['speed']+10:3}|Speed       +10 = {self.attributes['speed']+10:3}|                      
+---------------------|---------------------|----------------------
+Blade       +10 = {self.skills['blade']+10:3}|Sneak       +10 = {self.skills['sneak']+10:3}|Conjuration  +10 = {self.skills['conjuration']+10:3}
+Blunt       +10 = {self.skills['blunt']+10:3}|Security    +10 = {self.skills['security']+10:3}|Restoration  +10 = {self.skills['restoration']+10:3}
+Heavy Armor +10 = {self.skills['heavy armor']+10:3}|Light Armor +10 = {self.skills['light armor']+10:3}|Destruction  +10 = {self.skills['destruction']+10:3}
+""")
+            path = input()
+
+        if path not in ['steel', 'shadow', 'spirit']:
+            raise RuntimeError('Invalid path')
+
+        if path == 'steel':
+            print(f"""        STEEL        
+---------------------
+Strength    +10 = {self.attributes['strength']+10:3}
+Speed       +10 = {self.attributes['speed']+10:3}
+---------------------
+Blade       +10 = {self.skills['blade']+10:3}
+Blunt       +10 = {self.skills['blunt']+10:3}
+Heavy Armor +10 = {self.skills['heavy armor']+10:3}
+""")
+            should_continue = input('Are you happy with this path? Type \'yes\' to proceed\n')
+            if should_continue != 'yes':
+                return None
+            attributes_to_raise = ['strength','speed']
+            skills_to_raise = ['blade','blunt','heavy armor']
+
+        elif path == 'shadow':
+            print(f"""        SHADOW       
+---------------------
+Agility     +10 = {self.attributes['agility']+10:3}
+Speed       +10 = {self.attributes['speed']+10:3}
+---------------------
+Sneak       +10 = {self.skills['sneak']+10:3}
+Security    +10 = {self.skills['security']+10:3}
+Light Armor +10 = {self.skills['light armor']+10:3}
+""")
+            should_continue = input('Are you happy with this path? Type \'yes\' to proceed\n')
+            if should_continue != 'yes':
+                return None
+            attributes_to_raise = ['agility','speed']
+            skills_to_raise = ['sneak','security','light armor']
+
+        # only reached when path == 'spirit'
+        else:
+            print(f"""        SPIRIT        
+----------------------
+Intelligence +10 = {self.attributes['intelligence']+10:3}
+----------------------
+Conjuration  +10 = {self.skills['conjuration']+10:3}
+Restoration  +10 = {self.skills['restoration']+10:3}
+Destruction  +10 = {self.skills['destruction']+10:3}
+""")
+            should_continue = input('Are you happy with this path? Type \'yes\' to proceed\n')
+            if should_continue != 'yes':
+                return None
+            attributes_to_raise = ['intelligence']
+            skills_to_raise = ['conjuration','restoration','destruction']
+
+        # here we go
+        for attribute in attributes_to_raise:
+            self.attributes[attribute] += 10
+
+        level_ups_earned = 0
+        major_skill_ups_over_100 = 0
+
+        for skill in skills_to_raise:
+            self.skills[skill] += 10
+            if skill in self.character_class.major_skills:
+                level_ups_earned += 1
+                if self.skills[skill] > 100:
+                    major_skill_ups_over_100 += self.skills[skill] - 100
+
+        # won't trigger if level_ups_earned == 0
+        for x in range(level_ups_earned):
+            self.level_up_history[max(list(self.level_up_history))+1] = {
+                'skills': self.skills.copy(),
+                }
+
+        if level_ups_earned:
+            self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
+            self.level_skill_cap += major_skill_ups_over_100 // 10
 
 
 def saveCharacter(character,savename='saved-character.json'):
