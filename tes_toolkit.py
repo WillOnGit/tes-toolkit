@@ -565,6 +565,7 @@ class Character:
                 self.skills[skill] += magnitude
                 self.level_up_attribute_bonuses[skill_attribute_mappings[skill]] += magnitude
                 self.level_up_progress += magnitude
+                level_up_available = False
 
             else:
                 # prep
@@ -773,6 +774,9 @@ class Character:
     def validate(self):
         """
         Public method - validate PC has levelled efficiently.
+
+        WARNING: if the Oghma Infinium has been used then this will
+        throw a warning. Just ignore it for now.
         """
         if self.level_up_progress != 0:
             print('This currently only applies to level up milestones')
