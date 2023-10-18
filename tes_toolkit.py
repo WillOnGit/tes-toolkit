@@ -1256,6 +1256,9 @@ Destruction  +10 = {self.skills['destruction']+10:3}
             self.level_up_attribute_bonuses = {x:0 for x in all_attributes}
             self.level_skill_cap += major_skill_ups_over_100 // 10
 
+        # fatigue or magicka could have changed
+        self.calculateDerivedAttributes()
+
 
 def saveCharacter(character,savename='saved-character.json'):
     """
