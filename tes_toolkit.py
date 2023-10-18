@@ -1277,6 +1277,7 @@ def saveCharacter(character,savename='saved-character.json'):
             'birthsign': character.birthsign,
             'health': character.health,
             'times trained': character.times_trained_this_level,
+            'attributes': character.attributes,
             'skills': character.skills,
             'character class': {
                 'name': character.character_class.name,
@@ -1310,33 +1311,24 @@ def loadCharacter(savename='saved-character.json'):
                 int(x): core_data['level up history'][x] for x in list(core_data['level up history'])
                 }
 
-        # check if saved class is a default
-        character_class = None
-        for x in default_classes:
-            if all([
-                core_data['character class']['name'] == default_classes[x].name,
-                core_data['character class']['specialisation'] == default_classes[x].specialisation,
-                core_data['character class']['favoured_attributes'] == default_classes[x].favoured_attributes,
-                core_data['character class']['major_skills'] == default_classes[x].major_skills,
-                ]):
-                # we've found a match
-                character_class = default_classes[x]
-                break
-        if character_class is None:
-            # class isn't a default, so create it
-            character_class = CharacterClass(
-                    core_data['character class']['name'],
-                    core_data['character class']['specialisation'],
-                    core_data['character class']['favoured_attributes'],
-                    core_data['character class']['major_skills']
-                    )
+        character_class = CharacterClass(
+                core_data['character class']['name'],
+                core_data['character class']['specialisation'],
+                core_data['character class']['favoured_attributes'],
+                core_data['character class']['major_skills']
+                )
 
         # class is ready so build character
         # we DO NOT validate the saved data, just try
         level = max(list(core_data['restored history']))
         character = Character(core_data['race'],core_data['gender'],character_class,core_data['birthsign'])
-        character.override(core_data['restored history'][level]['attributes'].copy(),core_data['restored history'][level]['skills'].copy(),core_data['health'],level)
-        character.level_up_history = core_data['restored history'].copy()
+        # attributes didn't used to be saved, so for compatibility we allow for them to be absent
+        if 'attributes' in core_data:
+            loaded_attributes = core_data['attributes']
+        else:
+            loaded_attributes = core_data['restored history'][level]['attributes']
+        character.override(loaded_attributes,core_data['restored history'][level]['skills'],core_data['health'],level)
+        character.level_up_history = core_data['restored history']
         character.times_trained_this_level = core_data['times trained']
         for x in all_skills:
             difference = core_data['skills'][x] - character.skills[x]
