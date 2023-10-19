@@ -1310,7 +1310,7 @@ def loadCharacter(savename='saved-character.json'):
             core_data = json.loads(f.read())
 
         # JSON doesn't support integers as names so we recreate the history dict
-        core_data['restored history'] = {
+        restored_history = {
                 int(x): core_data['level up history'][x] for x in list(core_data['level up history'])
                 }
 
@@ -1321,17 +1321,17 @@ def loadCharacter(savename='saved-character.json'):
                 core_data['character class']['major_skills']
                 )
 
-        # class is ready so build character
-        # we DO NOT validate the saved data, just try
-        level = max(list(core_data['restored history']))
-        character = Character(core_data['race'],core_data['gender'],character_class,core_data['birthsign'])
+        level = max(list(restored_history))
         # attributes didn't used to be saved, so for compatibility we allow for them to be absent
         if 'attributes' in core_data:
             loaded_attributes = core_data['attributes']
         else:
-            loaded_attributes = core_data['restored history'][level]['attributes']
-        character.override(loaded_attributes,core_data['restored history'][level]['skills'],core_data['health'],level)
-        character.level_up_history = core_data['restored history']
+            loaded_attributes = restored_history[level]['attributes'].copy()
+
+        # we DO NOT validate the saved data, just try to build character
+        character = Character(core_data['race'],core_data['gender'],character_class,core_data['birthsign'])
+        character.override(loaded_attributes,restored_history[level]['skills'].copy(),core_data['health'],level)
+        character.level_up_history = restored_history
         character.times_trained_this_level = core_data['times trained']
         for x in all_skills:
             difference = core_data['skills'][x] - character.skills[x]
