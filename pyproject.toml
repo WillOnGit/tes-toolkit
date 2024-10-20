@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tes-toolkit"
-version = "1.1.0"
+version = "1.1.1"
 description = "A toolkit for minmaxers of Elder Scrolls games"
 readme = "README.md"
 license = {file = "LICENSE"}

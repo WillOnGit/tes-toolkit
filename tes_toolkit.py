@@ -1019,9 +1019,10 @@ Optimal 7x100 level can still be achieved but you must increase
         # calculate optimal magicka
         max_magicka = 200 + self.magicka_birthsign_bonus + self.magicka_racial_bonus
 
-        # max fatigue and encumbrance are always the same
-        max_fatigue = 400
-        max_encumbrance = 500
+        # max fatigue and encumbrance aren't always the same!
+        # calculate them based on Oghma Infinium potential
+        max_fatigue = 200 + (max(100, self.attributes['strength'])) + (max(100, self.attributes['agility']))
+        max_encumbrance = 5 * (max(100, self.attributes['strength']))
 
         print(f'''
 ==================
